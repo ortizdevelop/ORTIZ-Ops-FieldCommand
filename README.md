@@ -1,6 +1,6 @@
 <div align="center">
 
-# ORTIZ Field Command
+# ORTIZ Ops - FieldCommand
 
 **Buy, place and command your own army in Nuclear Option**
 
@@ -108,7 +108,7 @@ For every strike you can pick the munition with ◄ ► (or **auto**).
 
 ## Settings
 
-Open **F1 → ORTIZ Field Command**. The most useful options:
+Open **F1 → ORTIZ Ops - FieldCommand**. The most useful options:
 
 | Section | Setting | Default |
 |---|---|---|
@@ -136,13 +136,13 @@ Open **F1 → ORTIZ Field Command**. The most useful options:
 
 ## Installation
 
-**Recommended:** install with [Nuclear Option Mod Manager (NOMM)](https://github.com/Combat787/NOMM) — search for **ORTIZ Field Command**. NOMM also keeps it up to date.
+**Recommended:** install with [Nuclear Option Mod Manager (NOMM)](https://github.com/Combat787/NOMM) — search for **ORTIZ Ops - FieldCommand**. NOMM also keeps it up to date.
 
-**Manually:** install [BepInEx 5](https://github.com/BepInEx/BepInEx/releases), download `ORTIZ.FieldCommand.dll` from [Releases](../../releases) and put it in `Nuclear Option/BepInEx/plugins/ORTIZ.FieldCommand/`.
+**Manually:** install [BepInEx 5](https://github.com/BepInEx/BepInEx/releases), download `ORTIZ-Ops-FieldCommand.dll` from [Releases](../../releases) and put it in `Nuclear Option/BepInEx/plugins/ORTIZ-Ops-FieldCommand/`.
 
 **Optional:** [BepInEx Configuration Manager](https://github.com/BepInEx/BepInEx.ConfigurationManager) for the F1 settings window; **KAR** and **BOTE** for playable units.
 
-> Upgrading from an old build named *FieldCommand*: delete the old `BepInEx/plugins/FieldCommand` folder. Your settings are carried over automatically.
+> Upgrading from an older build named *FieldCommand* or *ORTIZ.FieldCommand*: delete the old `BepInEx/plugins/FieldCommand` / `BepInEx/plugins/ORTIZ.FieldCommand` folder. Your settings are carried over automatically.
 
 ## Building from source
 
@@ -206,10 +206,10 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 Боеприпас для каждого удара можно выбрать кнопками ◄ ► (или **авто**).
 
 ### Настройки
-**F1 → ORTIZ Field Command**: источник денег, множитель цены, лимиты юнитов, % возврата и наград, радиусы территории, дистанции атаки, фракции, высоты и скорость снарядов, цены и перезарядки стратегем — см. таблицу [Settings](#settings) выше.
+**F1 → ORTIZ Ops - FieldCommand**: источник денег, множитель цены, лимиты юнитов, % возврата и наград, радиусы территории, дистанции атаки, фракции, высоты и скорость снарядов, цены и перезарядки стратегем — см. таблицу [Settings](#settings) выше.
 
 ### Установка
-Через **NOMM** — найди **ORTIZ Field Command**. Вручную — положи `ORTIZ.FieldCommand.dll` из [Releases](../../releases) в `BepInEx/plugins/ORTIZ.FieldCommand/`. Если стояла старая версия *FieldCommand* — удали её папку, настройки перенесутся сами.
+Через **NOMM** — найди **ORTIZ Ops - FieldCommand**. Вручную — положи `ORTIZ-Ops-FieldCommand.dll` из [Releases](../../releases) в `BepInEx/plugins/ORTIZ-Ops-FieldCommand/`. Если стояла старая версия *FieldCommand* или *ORTIZ.FieldCommand* — удали её папку, настройки перенесутся сами.
 
 ---
 

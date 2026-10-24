@@ -17,12 +17,12 @@ namespace FieldCommand
         Hide
     }
 
-    [BepInPlugin(Guid, "ORTIZ Field Command", Version)]
+    [BepInPlugin(Guid, "ORTIZ Ops - FieldCommand", Version)]
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.9.0";
+        public const string Version = "0.9.1";
 
         internal static ManualLogSource Log;
 
@@ -144,7 +144,7 @@ namespace FieldCommand
             go.hideFlags = HideFlags.HideAndDontSave;
             go.AddComponent<FieldCommandController>();
 
-            Log.LogInfo($"ORTIZ Field Command v{Version} loaded");
+            Log.LogInfo($"ORTIZ Ops - FieldCommand v{Version} loaded");
         }
     
         /// <summary>Settings of the old "com.nikita.fieldcommand" build are carried over once.</summary>

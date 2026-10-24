@@ -805,7 +805,7 @@ namespace FieldCommand
 
             if (menuOpen)
             {
-                windowRect = GUILayout.Window(0x46434D, windowRect, DrawWindow, "ORTIZ Field Command — покупка техники");
+                windowRect = GUILayout.Window(0x46434D, windowRect, DrawWindow, "ORTIZ Ops - FieldCommand — покупка техники");
                 if (draft != null)
                 {
                     loadoutRect = GUILayout.Window(0x46434E, loadoutRect, DrawLoadoutWindow, "Модули и вооружение");
