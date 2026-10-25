@@ -22,7 +22,8 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.9.1";
+        public const string Version = "0.9.2";
+        public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
 
@@ -108,8 +109,8 @@ namespace FieldCommand
             Funds = Config.Bind("2. Экономика", "Источник денег", FundsSource.Player, "Player — личный бюджет игрока (как при покупке самолётов), Faction — казна фракции");
             PriceMultiplier = Config.Bind("2. Экономика", "Множитель цены", 1f, new ConfigDescription("Цена = стоимость юнита в игре × множитель", new AcceptableValueRange<float>(0f, 10f)));
             MinPrice = Config.Bind("2. Экономика", "Минимальная цена", 0.5f, "Минимальная цена юнита (млн), если у юнита в игре стоимость 0");
-            MaxOwnUnits = Config.Bind("2. Экономика", "Лимит своих юнитов", 60, "Сколько юнитов, купленных себе, может быть живо одновременно (0 — без лимита)");
-            MaxFactionUnits = Config.Bind("2. Экономика", "Лимит юнитов для фракции", 60, "Сколько юнитов, купленных для фракции, может быть живо одновременно (0 — без лимита). Считается отдельно от своих");
+            MaxOwnUnits = Config.Bind("2. Экономика", "Лимит своих юнитов", 60, new ConfigDescription("Сколько юнитов, купленных себе, может быть живо одновременно (1–" + MaxUnitLimit + "). Меняется и прямо в меню покупки", new AcceptableValueRange<int>(1, MaxUnitLimit)));
+            MaxFactionUnits = Config.Bind("2. Экономика", "Лимит юнитов для фракции", 60, new ConfigDescription("Сколько юнитов, купленных для фракции, может быть живо одновременно (1–" + MaxUnitLimit + "). Считается отдельно от своих. Меняется и прямо в меню покупки", new AcceptableValueRange<int>(1, MaxUnitLimit)));
             ScrapRefundPercent = Config.Bind("2. Экономика", "Возврат при списании, %", 50f, new ConfigDescription("Сколько процентов цены покупки возвращается, если списать (убрать) своего юнита", new AcceptableValueRange<float>(0f, 100f)));
             ScrapKey = Config.Bind("1. Управление", "Списать юнитов", KeyCode.Delete, "На карте: убрать выделенных купленных юнитов с возвратом части денег");
 

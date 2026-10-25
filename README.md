@@ -40,7 +40,7 @@ Spend your money on **ground units, warships, static air defence and supply depo
 | 📍 **Place them yourself** | On the map (click) or with a free camera (aim + key). Rotate before placing. Ships only on water deep enough, vehicles only on land. |
 | 🗺️ **Own territory only** | Near your airbases (separate radius for ground and naval units) and near your own units, never too close to the enemy. All radii configurable. |
 | 🏳️ **Faction-locked** | BDF buys only BDF equipment, PALA only PALA. Ownership is learned from the game's own missions and convoys; manual overrides in config. |
-| 👤 **For yourself or for the faction** | *For me*: units hold position and wait for your orders. *For faction*: the AI decides where they go. Separate limits (60 each by default). |
+| 👤 **For yourself or for the faction** | *For me*: units hold position and wait for your orders. *For faction*: the AI decides where they go. Separate limits (60 each by default, up to 150) — set them with sliders right in the purchase menu. |
 | 🎯 **RTS orders on the map** | Move, waypoints, hold, focus fire from current position, advance to firing range, automatic missile defence, scrap with refund. |
 | 🚙 **Playable KAR / BOTE units** | Pick modules for every hardpoint, buy and spawn right inside. Get out — the vehicle stays; get back in from the menu. |
 | 🏗️ **Defences and supplies** | SAM sites, gun positions, radars, depots, ammo / fuel / repair containers. Supplies don't use unit slots. |
@@ -80,7 +80,7 @@ All keys can be rebound in the Configuration Manager (F1).
 
 ## Purchase menu
 
-The menu (F6) shows your budget, faction, unit counters and the money earned from kills. Tabs:
+The menu (F6) shows your budget, faction, unit counters and the money earned from kills. Below them are two sliders (with −10 / − / + / +10 buttons) for **your unit limit** and the **faction unit limit**, 1–150 each. Tabs:
 
 - **Ground** — AA, radars, artillery, tanks, IFVs, logistics… grouped by category.
 - **Naval** — carriers, LHAs, cruisers, destroyers, frigates, corvettes, support ships.
@@ -114,7 +114,7 @@ Open **F1 → ORTIZ Ops - FieldCommand**. The most useful options:
 |---|---|---|
 | Economy | Funds source (personal / faction treasury) | Personal |
 | Economy | Price multiplier / minimum price | ×1 / 0.5 M |
-| Economy | Own unit limit / faction unit limit | 60 / 60 |
+| Economy | Own unit limit / faction unit limit (1–150, also adjustable right in the F6 menu) | 60 / 60 |
 | Economy | Refund when scrapping | 50 % |
 | Economy | Kill reward share (own units) / also for faction units | 50 % / on |
 | Territory | Own territory only | on |
@@ -166,7 +166,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 - 📍 **Ручная расстановка** — на карте (клик) или камерой (прицел + клавиша), с поворотом. Корабли — только на достаточной глубине, техника — только на суше.
 - 🗺️ **Только своя территория** — рядом со своими авиабазами (отдельный радиус для наземки и флота) и своими юнитами, не ближе заданной дистанции к врагу.
 - 🏳️ **Только своя фракция** — BDF покупает технику BDF, PALA — PALA. Ручная привязка в настройках.
-- 👤 **Себе или фракции** — «себе»: стоят на месте и ждут приказов; «фракции»: ими управляет ИИ. Отдельные лимиты (по 60).
+- 👤 **Себе или фракции** — «себе»: стоят на месте и ждут приказов; «фракции»: ими управляет ИИ. Отдельные лимиты (по 60, максимум 150) — меняются ползунками прямо в меню покупки.
 - 🎯 **Приказы на карте** — движение, маршрут, держать позицию, огонь с места, выдвижение на дистанцию огня, перехват ракет, списание с возвратом денег.
 - 🚙 **Играбельная техника KAR / BOTE** — выбор модулей на каждую точку подвеса, сразу садишься внутрь, можно выйти и сесть снова.
 - 🏗️ **Оборона и снабжение** — ЗРК, огневые точки, радары, склады, контейнеры с боеприпасами/топливом/ремонтом. Снабжение не занимает слоты юнитов.
@@ -191,6 +191,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **Delete** | Списать выделенных купленных юнитов с возвратом 50 % |
 
 ### Меню (F6)
+Вверху — ползунки **лимита своих юнитов** и **лимита юнитов фракции** (1–150, кнопки −10 / − / + / +10).
 Вкладки: **Наземная**, **Флот**, **Оборона/склады**, **Играбельная** (выбор модулей → покупка → появляешься внутри), **Мои** (список купленного: показать на карте, стоп, сесть), **Стратегемы**.
 
 ### Стратегемы

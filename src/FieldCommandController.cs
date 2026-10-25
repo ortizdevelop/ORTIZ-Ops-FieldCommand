@@ -219,6 +219,24 @@ namespace FieldCommand
 
         private static string Lim(int v) => v > 0 ? "/" + v : "";
 
+        /// <summary>Slider and −/+ buttons for a unit limit (1..Plugin.MaxUnitLimit); saved to the config at once.</summary>
+        private static void DrawLimitRow(string label, BepInEx.Configuration.ConfigEntry<int> entry, int alive)
+        {
+            int max = Plugin.MaxUnitLimit;
+            int v = Mathf.Clamp(entry.Value, 1, max);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label, GUILayout.Width(160));
+            if (GUILayout.Button("−10", GUILayout.Width(38))) v -= 10;
+            if (GUILayout.Button("−", GUILayout.Width(26))) v -= 1;
+            v = Mathf.RoundToInt(GUILayout.HorizontalSlider(v, 1, max, GUILayout.Width(230), GUILayout.Height(18)));
+            if (GUILayout.Button("+", GUILayout.Width(26))) v += 1;
+            if (GUILayout.Button("+10", GUILayout.Width(38))) v += 10;
+            v = Mathf.Clamp(v, 1, max);
+            GUILayout.Label($"{v} (сейчас {alive})", GUILayout.Width(120));
+            GUILayout.EndHorizontal();
+            if (v != entry.Value) entry.Value = v;
+        }
+
         private List<Unit> AllBought()
         {
             var l = new List<Unit>(purchased.Count + factionBought.Count);
@@ -1030,6 +1048,8 @@ namespace FieldCommand
             if (GUILayout.Toggle(!buyForFaction, " Себе — стоят на месте и ждут моих приказов", GUILayout.Width(330))) buyForFaction = false;
             if (GUILayout.Toggle(buyForFaction, " Фракции — ИИ сам решает, куда ехать", GUILayout.Width(290))) buyForFaction = true;
             GUILayout.EndHorizontal();
+            DrawLimitRow("Лимит своих юнитов:", Plugin.MaxOwnUnits, purchased.Count);
+            DrawLimitRow("Лимит юнитов фракции:", Plugin.MaxFactionUnits, factionBought.Count);
 
             if (!GameApi.IsServer())
             {
