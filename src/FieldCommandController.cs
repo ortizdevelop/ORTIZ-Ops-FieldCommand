@@ -1478,6 +1478,23 @@ namespace FieldCommand
                     GUI.enabled = true;
                     GUILayout.EndHorizontal();
                 }
+                if (s.HasVolume)
+                {
+                    string what = s.Kind == StratagemKind.Carpet ? "Бомб" : s.Kind == StratagemKind.MissileStrike ? "Ракет" : "Снарядов";
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(what + " в залпе:", GUILayout.Width(120));
+                    if (GUILayout.Button("−", GUILayout.Width(26))) s.Shells.Value = Mathf.Max(s.MinShells, s.ShellCount - 1);
+                    GUILayout.Label(s.ShellCount.ToString(), GUILayout.Width(30));
+                    if (GUILayout.Button("+", GUILayout.Width(26))) s.Shells.Value = Mathf.Min(s.MaxShells, s.ShellCount + 1);
+                    GUILayout.Space(20);
+                    GUILayout.Label("Залпов:", GUILayout.Width(60));
+                    if (GUILayout.Button("−", GUILayout.Width(26))) s.Salvos.Value = Mathf.Max(1, s.SalvoCount - 1);
+                    GUILayout.Label(s.SalvoCount.ToString(), GUILayout.Width(30));
+                    if (GUILayout.Button("+", GUILayout.Width(26))) s.Salvos.Value = Mathf.Min(Stratagem.MaxSalvos, s.SalvoCount + 1);
+                    GUILayout.Space(20);
+                    GUILayout.Label($"всего {s.ShellCount * s.SalvoCount}, интервал {Stratagems.SalvoInterval.Value:0} с", GUILayout.Width(200));
+                    GUILayout.EndHorizontal();
+                }
                 if (s.Kind == StratagemKind.Airdrop)
                 {
                     DrawAirdropPicker(s);

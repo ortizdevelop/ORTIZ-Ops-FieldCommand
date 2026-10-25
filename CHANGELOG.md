@@ -1,4 +1,6 @@
 # Changelog
+## 0.9.3
+- Stratagems: choose the number of shells / bombs / missiles per salvo and the number of salvos (1–10) for artillery, carpet bombing and missile strikes. The price scales with the total amount. New setting: interval between salvos (default 4 s).
 ## 0.9.2
 - Unit limits for yourself and for the faction can now be set right in the purchase menu (sliders + −10/−/+/+10 buttons), up to **150** each.
 ## 0.9.1

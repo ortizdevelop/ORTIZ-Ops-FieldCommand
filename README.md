@@ -97,14 +97,16 @@ Choose a stratagem → **Target on map** or **Target with camera**. The strike l
 
 | Stratagem | What it does | Price | Cooldown |
 |---|---|---|---|
-| **Artillery** | A barrage of 12 shells on a point or spread over the circle | 15 M | 60 s |
-| **Carpet bombing** | 14 bombs in a line — ~200 m in point mode or the full circle diameter, along the arrow (R to rotate). The line is shown on the map and in the camera | 35 M | 120 s |
-| **Missile strike** | 4 missiles diving vertically: point — all into the nearest visible enemy; area — into visible enemies in the circle, with lead on moving targets | 40 M | 90 s |
+| **Artillery** | A barrage of shells (12 by default, 1–60 per salvo) on a point or spread over the circle | 15 M | 60 s |
+| **Carpet bombing** | Bombs in a line (14 by default, 4–40 per salvo) — ~200 m in point mode or the full circle diameter, along the arrow (R to rotate). The line is shown on the map and in the camera | 35 M | 120 s |
+| **Missile strike** | Missiles diving vertically (4 by default, 1–16 per salvo): point — all into the nearest visible enemy; area — into visible enemies in the circle, with lead on moving targets | 40 M | 90 s |
 | **Tactical nuke** | One tactical nuclear warhead | 250 M | 300 s |
 | **Strategic nuke** | One strategic nuclear warhead | 800 M | 900 s |
 | **Airdrop** | 1–6 ground vehicles of your choice on real parachutes, anywhere on land — even behind enemy lines. Price = unit price × count × 1.3 | — | 90 s |
 
 For every strike you can pick the munition with ◄ ► (or **auto**).
+
+For artillery, carpet bombing and missile strikes you also choose **how many projectiles per salvo** and **how many salvos** (1–10, 4 s apart by default). The price grows proportionally: *price = base price × (projectiles ÷ default amount) × salvos*. Prices in the table are for the default amount and one salvo.
 
 ## Settings
 
@@ -129,10 +131,10 @@ Open **F1 → ORTIZ Ops - FieldCommand**. The most useful options:
 | Defences | Enable / show civil buildings / buildings can be captured | on / off / off |
 | Stratagems | Strike delay | 5 s |
 | Stratagems | Spawn height above ground / never below (above sea level) | 800 m / 3500 m |
-| Stratagems | Fall speed / artillery shells | 300 m/s / 12 |
+| Stratagems | Fall speed / interval between salvos | 300 m/s / 4 s |
 | Stratagems | Airdrop height / airdrop markup | 150 m / ×1.3 |
 | Stratagems | Stratagem kill reward | 15 % |
-| Stratagems | Price, cooldown and munition for every stratagem | see table above |
+| Stratagems | Price, cooldown, munition, projectiles per salvo and salvos for every stratagem | see table above |
 
 ## Installation
 
@@ -197,14 +199,16 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 ### Стратегемы
 | Стратегема | Что делает | Цена | Перезарядка |
 |---|---|---|---|
-| Артудар | 12 снарядов в точку или по кругу | 15 млн | 60 с |
-| Ковровая бомбардировка | 14 бомб полосой по стрелке (R — повернуть), полоса видна на карте и в камере | 35 млн | 120 с |
-| Ракетный удар | 4 ракеты отвесно, с упреждением по движущимся целям | 40 млн | 90 с |
+| Артудар | Снаряды (по умолчанию 12, 1–60 в залпе) в точку или по кругу | 15 млн | 60 с |
+| Ковровая бомбардировка | Бомбы (по умолчанию 14, 4–40 в залпе) полосой по стрелке (R — повернуть), полоса видна на карте и в камере | 35 млн | 120 с |
+| Ракетный удар | Ракеты (по умолчанию 4, 1–16 в залпе) отвесно, с упреждением по движущимся целям | 40 млн | 90 с |
 | Тактический ЯУ | 1 тактический ядерный заряд | 250 млн | 300 с |
 | Стратегический ЯУ | 1 стратегический ядерный заряд | 800 млн | 900 с |
 | Десант | 1–6 единиц наземной техники на парашютах в любую точку суши | цена × кол-во × 1,3 | 90 с |
 
 Боеприпас для каждого удара можно выбрать кнопками ◄ ► (или **авто**).
+
+Для артудара, ковровой бомбардировки и ракетного удара выбирается **количество снарядов в залпе** и **число залпов** (1–10, по умолчанию с интервалом 4 с). Цена растёт пропорционально: *цена = базовая × (снарядов ÷ стандартное количество) × залпов*. В таблице — цены за стандартное количество и один залп.
 
 ### Настройки
 **F1 → ORTIZ Ops - FieldCommand**: источник денег, множитель цены, лимиты юнитов, % возврата и наград, радиусы территории, дистанции атаки, фракции, высоты и скорость снарядов, цены и перезарядки стратегем — см. таблицу [Settings](#settings) выше.

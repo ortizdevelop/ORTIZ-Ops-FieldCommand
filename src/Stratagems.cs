@@ -27,7 +27,18 @@ namespace FieldCommand
         public ConfigEntry<float> Price;
         public ConfigEntry<float> Cooldown;
         public ConfigEntry<string> Munition; // jsonKey / name override, empty = automatic
+        public ConfigEntry<int> Shells;      // projectiles per salvo (area stratagems)
+        public ConfigEntry<int> Salvos;      // number of salvos (area stratagems)
         public float ReadyAt;
+
+        /// <summary>Projectiles per salvo the base price is for (the original fixed amount).</summary>
+        public int BaseShells => Kind == StratagemKind.Artillery ? 12 : Kind == StratagemKind.Carpet ? 14 : Kind == StratagemKind.MissileStrike ? 4 : 1;
+        public int MinShells => Kind == StratagemKind.Carpet ? 4 : 1;
+        public int MaxShells => Kind == StratagemKind.Artillery ? 60 : Kind == StratagemKind.Carpet ? 40 : Kind == StratagemKind.MissileStrike ? 16 : 1;
+        public const int MaxSalvos = 10;
+        public bool HasVolume => Shells != null && Salvos != null;
+        public int ShellCount => Shells == null ? BaseShells : Mathf.Clamp(Shells.Value, MinShells, MaxShells);
+        public int SalvoCount => Salvos == null ? 1 : Mathf.Clamp(Salvos.Value, 1, MaxSalvos);
 
         // area of effect
         public bool Point;          // true = pin-point, false = area (circle)
@@ -48,6 +59,11 @@ namespace FieldCommand
             {
                 return DropUnit == null ? 0f : DropUnit.Price * DropCount * Mathf.Max(Stratagems.AirdropMarkup.Value, 1f);
             }
+            if (HasVolume)
+            {
+                // the configured price is for the standard amount in one salvo; more shells / salvos cost proportionally more
+                return Price.Value * ShellCount / (float)BaseShells * SalvoCount;
+            }
             return Price.Value;
         }
 
@@ -65,6 +81,7 @@ namespace FieldCommand
         public static ConfigEntry<float> DropSpeed;
         public static ConfigEntry<float> RewardPercent;
         public static ConfigEntry<int> ArtilleryShells;
+        public static ConfigEntry<float> SalvoInterval;
         public const float MinRadius = 30f;
         public const float MaxRadius = 1200f;
 
@@ -80,12 +97,13 @@ namespace FieldCommand
             MinAltitude = cfg.Bind(sec, "Высота появления не ниже, м над морем", 3500f, new ConfigDescription("Снаряды никогда не появляются ниже этой высоты над уровнем моря — защита от появления внутри гор, если рельеф в точке удара не прогружен. Поставь выше самых высоких гор карты", new AcceptableValueRange<float>(0f, 10000f)));
             DropSpeed = cfg.Bind(sec, "Скорость падения снарядов, м/с", 300f, "С какой начальной скоростью снаряды летят вниз");
             RewardPercent = cfg.Bind(sec, "Награда за уничтожения стратегемой, %", 15f, new ConfigDescription("Какой % от награды пилота-игрока ты получаешь за врагов, уничтоженных твоими стратегемами (0 — выключить)", new AcceptableValueRange<float>(0f, 100f)));
-            ArtilleryShells = cfg.Bind(sec, "Артудар: снарядов", 12, "Сколько снарядов в одном артударе");
+            ArtilleryShells = cfg.Bind(sec, "Артудар: снарядов", 12, new ConfigDescription("Сколько снарядов в одном залпе артудара (меняется и в меню стратегем). Цена растёт пропорционально", new AcceptableValueRange<int>(1, 60)));
+            SalvoInterval = cfg.Bind(sec, "Интервал между залпами, сек", 4f, new ConfigDescription("Пауза между залпами, если залпов больше одного", new AcceptableValueRange<float>(1f, 30f)));
 
             All.Clear();
-            All.Add(Make(cfg, sec, StratagemKind.Artillery, "Артудар", "Серия снарядов: точечно или по выбранному кругу", 15f, 60f));
-            All.Add(Make(cfg, sec, StratagemKind.Carpet, "Ковровая бомбардировка", "14 бомб полосой: точечно (~200 м) или длиной в диаметр круга, по направлению стрелки (R — повернуть)", 35f, 120f));
-            All.Add(Make(cfg, sec, StratagemKind.MissileStrike, "Ракетный удар", "4 ракеты: точечно — все в ближайшего видимого врага; по области — по видимым врагам в круге", 40f, 90f));
+            All.Add(Make(cfg, sec, StratagemKind.Artillery, "Артудар", "Серия снарядов: точечно или по выбранному кругу. Количество снарядов и залпов настраивается", 15f, 60f));
+            All.Add(Make(cfg, sec, StratagemKind.Carpet, "Ковровая бомбардировка", "Бомбы полосой: точечно (~200 м) или длиной в диаметр круга, по направлению стрелки (R — повернуть). Количество бомб и залпов настраивается", 35f, 120f));
+            All.Add(Make(cfg, sec, StratagemKind.MissileStrike, "Ракетный удар", "Ракеты отвесно: точечно — все в ближайшего видимого врага; по области — по видимым врагам в круге. Количество ракет и залпов настраивается", 40f, 90f));
             All.Add(Make(cfg, sec, StratagemKind.TacticalNuke, "Тактический ядерный удар", "1 тактический ядерный заряд", 250f, 300f));
             All.Add(Make(cfg, sec, StratagemKind.StrategicNuke, "Стратегический ядерный удар", "1 стратегический ядерный заряд", 800f, 900f));
             All.Add(Make(cfg, sec, StratagemKind.Airdrop, "Десант", "Сброс выбранной наземной техники с неба — куда угодно на сушу, даже в тыл врага", 0f, 90f));
@@ -99,6 +117,19 @@ namespace FieldCommand
             if (k != StratagemKind.Airdrop)
             {
                 s.Munition = cfg.Bind(sec, name + ": боеприпас", "", "Ключ или название боеприпаса из игры (пусто — выбрать автоматически). Ключи пишутся в лог при входе в миссию");
+            }
+            if (k == StratagemKind.Artillery)
+            {
+                s.Shells = ArtilleryShells;
+            }
+            else if (k == StratagemKind.Carpet || k == StratagemKind.MissileStrike)
+            {
+                string what = k == StratagemKind.Carpet ? "бомб" : "ракет";
+                s.Shells = cfg.Bind(sec, name + ": " + what + " в залпе", s.BaseShells, new ConfigDescription("Сколько " + what + " в одном залпе (меняется и в меню стратегем). Цена растёт пропорционально", new AcceptableValueRange<int>(s.MinShells, s.MaxShells)));
+            }
+            if (s.Shells != null)
+            {
+                s.Salvos = cfg.Bind(sec, name + ": залпов", 1, new ConfigDescription("Сколько залпов подряд (меняется и в меню стратегем). Цена умножается на число залпов", new AcceptableValueRange<int>(1, Stratagem.MaxSalvos)));
             }
             return s;
         }
@@ -462,12 +493,22 @@ namespace FieldCommand
             float r = s.Spread;
             Vector3 side = Vector3.Cross(Vector3.up, fwd);
             float speed = Mathf.Max(DropSpeed.Value, 50f);
+            int shells = s.ShellCount;
+            int salvos = s.SalvoCount;
+            for (int salvo = 0; salvo < salvos; salvo++)
+            {
+            if (salvo > 0)
+            {
+                toast?.Invoke($"{s.Name}: залп {salvo + 1} из {salvos}");
+                yield return new WaitForSeconds(Mathf.Max(SalvoInterval.Value, 0.5f));
+            }
+            c = p.Position.ToLocalPosition(); // floating origin may have moved between salvos
             RecordStrike(p.Position, s.Kind == StratagemKind.Carpet ? (s.Point ? 100f : r) : r, s.Kind);
             switch (s.Kind)
             {
                 case StratagemKind.Artillery:
                 {
-                    int n = Mathf.Clamp(ArtilleryShells.Value, 1, 60);
+                    int n = shells;
                     for (int i = 0; i < n; i++)
                     {
                         // every shell falls straight down onto its own point of the circle
@@ -479,9 +520,10 @@ namespace FieldCommand
                 case StratagemKind.Carpet:
                 {
                     float len = s.Point ? 200f : r * 2f;
-                    for (int i = 0; i < 14; i++)
+                    int n = shells;
+                    for (int i = 0; i < n; i++)
                     {
-                        Vector3 g = c + fwd * (-len * 0.5f + i * (len / 13f)) + side * ((r01() - 0.5f) * (s.Point ? 10f : 40f));
+                        Vector3 g = c + fwd * (-len * 0.5f + (n > 1 ? i * (len / (n - 1)) : len * 0.5f)) + side * ((r01() - 0.5f) * (s.Point ? 10f : 40f));
                         DropAbove(def, g, speed, hq, null);
                         yield return new WaitForSeconds(0.12f);
                     }
@@ -495,7 +537,8 @@ namespace FieldCommand
                         var t = FindVisibleEnemy(p.Position, 150f);
                         if (t != null) targets.Add(t);
                     }
-                    for (int i = 0; i < 4; i++)
+                    int n = shells;
+                    for (int i = 0; i < n; i++)
                     {
                         Unit target = targets.Count > 0 ? targets[i % targets.Count] : null;
                         Vector3 aim;
@@ -512,8 +555,8 @@ namespace FieldCommand
                             aim = s.Point ? c : RandomInCircle(c, r, r01);
                         }
                         // a few metres apart so the missiles never touch each other on the way down
-                        float a = i * Mathf.PI * 0.5f;
-                        aim += new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (s.Point ? 4f : 8f);
+                        float a = i * Mathf.PI * 2f / Mathf.Max(n, 4);
+                        aim += new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (s.Point ? 4f : 8f) * (1f + i / 8);
                         DropAbove(def, aim, speed, hq, null);
                         yield return new WaitForSeconds(0.5f);
                     }
@@ -523,6 +566,7 @@ namespace FieldCommand
                 case StratagemKind.StrategicNuke:
                     DropAbove(def, c, speed, hq, null);
                     break;
+            }
             }
         }
 
