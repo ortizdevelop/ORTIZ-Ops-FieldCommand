@@ -4,7 +4,7 @@
 
 **Buy, place and command your own army in Nuclear Option**
 
-[![Game](https://img.shields.io/badge/Nuclear%20Option-0.34-2b5797)](https://store.steampowered.com/app/2168680/Nuclear_Option/)
+[![Game](https://img.shields.io/badge/Nuclear%20Option-0.34.6-2b5797)](https://store.steampowered.com/app/2168680/Nuclear_Option/)
 [![BepInEx](https://img.shields.io/badge/BepInEx-5.4-6f42c1)](https://github.com/BepInEx/BepInEx)
 [![NOMM](https://img.shields.io/badge/install%20via-NOMM-2ea44f)](https://github.com/Combat787/NOMM)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)

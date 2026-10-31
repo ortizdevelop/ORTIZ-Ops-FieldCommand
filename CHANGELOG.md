@@ -1,4 +1,6 @@
 # Changelog
+## 0.9.4
+- Rebuilt for game version 0.34.6. No gameplay changes.
 ## 0.9.3
 - Stratagems: choose the number of shells / bombs / missiles per salvo and the number of salvos (1–10) for artillery, carpet bombing and missile strikes. The price scales with the total amount. New setting: interval between salvos (default 4 s).
 ## 0.9.2
