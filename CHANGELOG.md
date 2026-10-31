@@ -1,4 +1,6 @@
 # Changelog
+## 0.10.1
+- Fixed: in 0.10.0 the mod stopped loading after the language setting (the F6 menu did nothing and F1 showed only the language). Two setting names contained an apostrophe, which BepInEx does not allow. All your settings are kept.
 ## 0.10.0
 - **English interface** (default) with a **Russian** option: all windows, buttons, tips, messages, unit groups and stratagems are translated. Switch with the *Language* button in the purchase menu or F1 → *0. Language* (applies instantly).
 - F1 settings now have English names (Russian names are shown when the language is Russian, after a restart). Your existing values are carried over automatically.
