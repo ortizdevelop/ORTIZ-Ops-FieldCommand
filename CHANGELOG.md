@@ -1,4 +1,7 @@
 # Changelog
+## 0.10.0
+- **English interface** (default) with a **Russian** option: all windows, buttons, tips, messages, unit groups and stratagems are translated. Switch with the *Language* button in the purchase menu or F1 → *0. Language* (applies instantly).
+- F1 settings now have English names (Russian names are shown when the language is Russian, after a restart). Your existing values are carried over automatically.
 ## 0.9.4
 - Rebuilt for game version 0.34.6. No gameplay changes.
 ## 0.9.3

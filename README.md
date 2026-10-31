@@ -21,7 +21,7 @@ Spend your money on **ground units, warships, static air defence and supply depo
 > **Single-player / host only.** Every feature works only when *you* are the host. On a dedicated or someone else's server the mod does nothing, so it can't give anyone an advantage on servers they don't control.
 
 > [!NOTE]
-> The in-game interface is in **Russian**. All settings can be changed in the BepInEx Configuration Manager (F1).
+> The interface is in **English** by default and can be switched to **Russian** — with the *Language* button in the purchase menu or in F1 → *0. Language*. All settings can be changed in the BepInEx Configuration Manager (F1).
 
 ## Contents
 - [Features](#features)
@@ -89,7 +89,7 @@ The menu (F6) shows your budget, faction, unit counters and the money earned fro
 - **Mine** — every unit you bought: show on map, stop, get in (playable units).
 - **Stratagems** — call-in support, see below.
 
-Each unit row has **On map** and **With camera** buttons that start placement.
+Each unit row has **On map** and **Camera** buttons that start placement. The **Language** button at the bottom switches English ⇄ Russian.
 
 ## Stratagems
 
@@ -162,6 +162,9 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 
 > [!IMPORTANT]
 > **Только одиночная игра или если ты хост.** На выделенном или чужом сервере мод ничего не делает.
+
+> [!NOTE]
+> По умолчанию интерфейс на **английском**. Включить **русский**: кнопка «Language» внизу меню покупки (F6) или F1 → *0. Language* → *Russian*. Названия настроек в окне F1 переводятся после перезапуска игры.
 
 ### Возможности
 - 🛒 **Покупка юнитов** — вся наземная техника, флот и стационарная оборона игры по их игровой цене (множитель настраивается).
