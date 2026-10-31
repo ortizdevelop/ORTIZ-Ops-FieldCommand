@@ -42,6 +42,13 @@ namespace FieldCommand
                     null, new ConfigurationManagerAttributes { Order = 1000 }));
         }
 
+        /// <summary>BepInEx refuses these characters in section and key names.</summary>
+        private static string Clean(string s)
+        {
+            foreach (char c in new[] { '=', '\n', '\t', '\\', '"', '\'', '[', ']' }) s = s.Replace(c.ToString(), "");
+            return s.Trim();
+        }
+
         private static Dictionary<ConfigDefinition, string> Orphans(ConfigFile cfg)
         {
             try
@@ -62,6 +69,8 @@ namespace FieldCommand
         public static ConfigEntry<T> Bind<T>(ConfigFile cfg, string secEn, string secRu, string keyEn, string keyRu, T def,
             string descEn, string descRu, AcceptableValueBase range = null)
         {
+            secEn = Clean(secEn);
+            keyEn = Clean(keyEn);
             var attrs = new ConfigurationManagerAttributes();
             if (Ru)
             {

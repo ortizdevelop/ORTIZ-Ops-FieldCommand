@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.10.0";
+        public const string Version = "0.10.1";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -82,6 +82,30 @@ namespace FieldCommand
             Log = Logger;
             MigrateOldConfig();
 
+            BindConfig(Config);
+
+            try
+            {
+                new HarmonyLib.Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
+            }
+            catch (System.Exception e)
+            {
+                Log.LogError("Harmony patching failed: " + e);
+            }
+
+            Stratagems.Bind(Config);
+
+            var go = new GameObject("[FieldCommand]");
+            DontDestroyOnLoad(go);
+            go.hideFlags = HideFlags.HideAndDontSave;
+            go.AddComponent<FieldCommandController>();
+
+            Log.LogInfo($"ORTIZ Ops - FieldCommand v{Version} loaded");
+        }
+    
+        /// <summary>All settings (static so they can be checked outside the game).</summary>
+        internal static void BindConfig(ConfigFile Config)
+        {
             L.BindLanguage(Config);
             const string sCtl = "1. Controls", rCtl = "1. Управление";
             const string sEco = "2. Economy", rEco = "2. Экономика";
@@ -108,7 +132,7 @@ namespace FieldCommand
                 "On the map: selected units pick and shoot down enemy missiles themselves (strategic and nuclear first)",
                 "На карте: выделенные юниты сами выбирают и сбивают вражеские ракеты (стратегические и ядерные — первыми)");
 
-            RestrictToFaction = L.Bind(Config, sFac, rFac, "Own faction's equipment only", "Только техника своей фракции", true,
+            RestrictToFaction = L.Bind(Config, sFac, rFac, "Own faction equipment only", "Только техника своей фракции", true,
                 "BDF buys only BDF equipment, PALA only PALA (shared equipment is available to both)",
                 "BDF покупает только технику BDF, PALA — только PALA (общая техника доступна обеим)");
             UnknownUnits = L.Bind(Config, sFac, rFac, "Units with unknown faction", "Техника без известной фракции", UnknownUnitPolicy.AllowForAll,
@@ -123,7 +147,7 @@ namespace FieldCommand
                 "Через запятую: ключ:BDF, ключ:PALA, ключ:ALL. Ключи юнитов видны в LogOutput.log, если включить «Писать таблицу фракций в лог». Можно писать и имя юнита");
             LogFactionTable = L.Bind(Config, sFac, rFac, "Write faction table to log", "Писать таблицу фракций в лог", false,
                 "Write the list key | name | faction to BepInEx\\LogOutput.log", "Выводить в BepInEx\\LogOutput.log список: ключ | название | фракция");
-            ShowOtherFaction = L.Bind(Config, sFac, rFac, "Show other faction's equipment", "Показывать чужую технику", false,
+            ShowOtherFaction = L.Bind(Config, sFac, rFac, "Show other faction equipment", "Показывать чужую технику", false,
                 "Show the other faction's units in the list (greyed out, can't be bought)", "Показывать технику другой фракции в списке (серым, купить нельзя)");
 
             EnablePlayable = L.Bind(Config, sPla, rPla, "Enable", "Включить", true,
@@ -193,26 +217,8 @@ namespace FieldCommand
                 "How far from the target ships stop when ordered to attack", "На каком расстоянии от цели останавливаются корабли при приказе «Атаковать»");
             RotateStep = L.Bind(Config, sBeh, rBeh, "Rotation step, deg", "Шаг поворота, град", 45f,
                 "How many degrees the rotate key turns the unit", "На сколько градусов поворачивать юнит клавишей поворота");
-
-            try
-            {
-                new HarmonyLib.Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
-            }
-            catch (System.Exception e)
-            {
-                Log.LogError("Harmony patching failed: " + e);
-            }
-
-            Stratagems.Bind(Config);
-
-            var go = new GameObject("[FieldCommand]");
-            DontDestroyOnLoad(go);
-            go.hideFlags = HideFlags.HideAndDontSave;
-            go.AddComponent<FieldCommandController>();
-
-            Log.LogInfo($"ORTIZ Ops - FieldCommand v{Version} loaded");
         }
-    
+
         /// <summary>Settings of the old "com.nikita.fieldcommand" build are carried over once.</summary>
         private void MigrateOldConfig()
         {
