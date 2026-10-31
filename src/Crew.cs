@@ -132,10 +132,10 @@ namespace FieldCommand
         {
             why = null;
             var a = MyVehicle();
-            if (a == null) { why = "Ты сейчас ни в чём не сидишь"; return false; }
-            if (!IsPlayable(a)) { why = "Выйти можно только из техники KAR/BOTE"; return false; }
-            if (a.speed > 3f) { why = "Сначала остановись"; return false; }
-            if (Busy) { why = "Подожди, идёт пересадка"; return false; }
+            if (a == null) { why = L.T("You are not in a vehicle", "Ты сейчас ни в чём не сидишь"); return false; }
+            if (!IsPlayable(a)) { why = L.T("You can only leave KAR/BOTE vehicles", "Выйти можно только из техники KAR/BOTE"); return false; }
+            if (a.speed > 3f) { why = L.T("Stop first", "Сначала остановись"); return false; }
+            if (Busy) { why = L.T("Wait, switching vehicles", "Подожди, идёт пересадка"); return false; }
             return true;
         }
 
@@ -147,15 +147,15 @@ namespace FieldCommand
 
         public void Enter(Aircraft target)
         {
-            if (Busy) { Toast?.Invoke("Подожди, идёт пересадка"); return; }
-            if (target == null || target.disabled) { Toast?.Invoke("Техника уничтожена"); return; }
-            if (target.Player != null) { Toast?.Invoke("В ней уже кто-то есть"); return; }
+            if (Busy) { Toast?.Invoke(L.T("Wait, switching vehicles", "Подожди, идёт пересадка")); return; }
+            if (target == null || target.disabled) { Toast?.Invoke(L.T("The vehicle is destroyed", "Техника уничтожена")); return; }
+            if (target.Player != null) { Toast?.Invoke(L.T("Someone is already inside", "В ней уже кто-то есть")); return; }
             var mine = MyVehicle();
             if (mine == target) return;
             if (mine != null)
             {
-                if (!IsPlayable(mine)) { Toast?.Invoke("Сначала выйди из текущей техники обычным способом"); return; }
-                if (mine.speed > 3f) { Toast?.Invoke("Сначала остановись"); return; }
+                if (!IsPlayable(mine)) { Toast?.Invoke(L.T("Leave your current vehicle the normal way first", "Сначала выйди из текущей техники обычным способом")); return; }
+                if (mine.speed > 3f) { Toast?.Invoke(L.T("Stop first", "Сначала остановись")); return; }
                 StartCoroutine(LeaveRoutine(target)); // get out of the current one, then into the target
                 return;
             }
@@ -271,7 +271,7 @@ namespace FieldCommand
             catch (Exception e)
             {
                 Plugin.Log.LogError("[Crew] leave failed at disable: " + e);
-                Toast?.Invoke("Выйти не удалось: " + (e.InnerException ?? e).Message);
+                Toast?.Invoke(L.T("Couldn't leave: ", "Выйти не удалось: ") + (e.InnerException ?? e).Message);
             }
             if (!ok)
             {
@@ -300,14 +300,14 @@ namespace FieldCommand
             }
             if (copy == null)
             {
-                Toast?.Invoke("Ты вышел, но технику вернуть на место не удалось (см. LogOutput.log)");
+                Toast?.Invoke(L.T("You got out, but the vehicle couldn't be put back (see LogOutput.log)", "Ты вышел, но технику вернуть на место не удалось (см. LogOutput.log)"));
                 Busy = false;
                 yield break;
             }
 
             if (thenEnter == null)
             {
-                Toast?.Invoke("Ты вышел. Техника стоит на месте — «Сесть» в F6 → «Мои юниты»");
+                Toast?.Invoke(L.T("You got out. The vehicle stays here — \"Get in\" in F6 → \"Mine\"", "Ты вышел. Техника стоит на месте — «Сесть» в F6 → «Мои»"));
                 Busy = false;
                 yield break;
             }
@@ -339,7 +339,7 @@ namespace FieldCommand
             catch (Exception e)
             {
                 Plugin.Log.LogError("[Crew] enter failed at remove: " + e);
-                Toast?.Invoke("Сесть не удалось: " + (e.InnerException ?? e).Message);
+                Toast?.Invoke(L.T("Couldn't get in: ", "Сесть не удалось: ") + (e.InnerException ?? e).Message);
             }
             if (!ok)
             {
@@ -371,11 +371,11 @@ namespace FieldCommand
                 catch
                 {
                 }
-                Toast?.Invoke("Сесть не удалось — техника возвращена на место (см. LogOutput.log)");
+                Toast?.Invoke(L.T("Couldn't get in — the vehicle was put back (see LogOutput.log)", "Сесть не удалось — техника возвращена на место (см. LogOutput.log)"));
             }
             else
             {
-                Toast?.Invoke("Ты в " + (s.Def.unitName ?? s.Def.name));
+                Toast?.Invoke(L.T("You are in ", "Ты в ") + (s.Def.unitName ?? s.Def.name));
                 StartCoroutine(FixCameraAfterEnter(mine));
             }
             Busy = false;

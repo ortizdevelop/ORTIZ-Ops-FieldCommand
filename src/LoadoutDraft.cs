@@ -82,7 +82,7 @@ namespace FieldCommand
 
         public static string MountName(WeaponMount m)
         {
-            if (m == null) return "— пусто —";
+            if (m == null) return L.T("— empty —", "— пусто —");
             if (!string.IsNullOrEmpty(m.mountName)) return m.mountName;
             if (m.info != null && !string.IsNullOrEmpty(m.info.weaponName)) return m.info.weaponName;
             return m.name;
@@ -91,7 +91,7 @@ namespace FieldCommand
         public string SetName(int i)
         {
             var n = Sets[i].name;
-            return string.IsNullOrEmpty(n) ? "Слот " + (i + 1) : n;
+            return string.IsNullOrEmpty(n) ? L.T("Slot ", "Слот ") + (i + 1) : n;
         }
 
         public float MountCost(int set, WeaponMount m)

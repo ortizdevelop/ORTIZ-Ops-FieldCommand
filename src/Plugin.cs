@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.9.4";
+        public const string Version = "0.10.0";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -82,52 +82,117 @@ namespace FieldCommand
             Log = Logger;
             MigrateOldConfig();
 
-            MenuKey = Config.Bind("1. Управление", "Меню покупки", new KeyboardShortcut(KeyCode.F6), "Открыть/закрыть меню покупки юнитов");
-            RotateKey = Config.Bind("1. Управление", "Повернуть", KeyCode.R, "Повернуть юнит при расстановке (Shift — в обратную сторону)");
-            CameraPlaceKey = Config.Bind("1. Управление", "Поставить (камера)", KeyCode.G, "Поставить юнит в точку прицела в режиме камеры");
-            CancelKey = Config.Bind("1. Управление", "Отмена", KeyCode.X, "Выйти из режима расстановки");
-            HoldKey = Config.Bind("1. Управление", "Держать позицию", KeyCode.H, "На карте: переключить «держать позицию» для выделенных своих юнитов");
-            AttackKey = Config.Bind("1. Управление", "Атаковать", KeyCode.K, "На карте: выделенные юниты открывают огонь по врагу/ракете под курсором с текущей позиции. Shift+клавиша — выдвинуться на дистанцию огня. По пустому месту — сбросить цель");
-            MissileDefenseKey = Config.Bind("1. Управление", "Перехват ракет", KeyCode.L, "На карте: выделенные юниты сами выбирают и сбивают вражеские ракеты (стратегические и ядерные — первыми)");
+            L.BindLanguage(Config);
+            const string sCtl = "1. Controls", rCtl = "1. Управление";
+            const string sEco = "2. Economy", rEco = "2. Экономика";
+            const string sTer = "3. Territory", rTer = "3. Территория";
+            const string sBeh = "4. Behaviour", rBeh = "4. Поведение";
+            const string sFac = "5. Factions", rFac = "5. Фракции";
+            const string sPla = "6. Playable vehicles", rPla = "6. Играбельная техника";
+            const string sDef = "8. Defences and supplies", rDef = "8. Оборона и снабжение";
 
-            RestrictToFaction = Config.Bind("5. Фракции", "Только техника своей фракции", true, "BDF покупает только технику BDF, PALA — только PALA (общая техника доступна обеим)");
-            UnknownUnits = Config.Bind("5. Фракции", "Техника без известной фракции", UnknownUnitPolicy.AllowForAll, "Что делать с юнитами, которые ни разу не встречались ни у одной фракции (обычно — из модов): AllowForAll — доступны обеим, Hide — скрыть");
-            FactionShareThreshold = Config.Bind("5. Фракции", "Порог принадлежности", 0.75f, new ConfigDescription("Если юнит используется фракцией в ≥ этой доли случаев (миссии, конвои), он считается её техникой; иначе — общей", new AcceptableValueRange<float>(0.5f, 1f)));
-            FactionOverrides = Config.Bind("5. Фракции", "Ручная привязка", "", "Через запятую: ключ:BDF, ключ:PALA, ключ:ALL. Ключи юнитов видны в LogOutput.log, если включить «Писать таблицу фракций в лог». Можно писать и имя юнита");
-            LogFactionTable = Config.Bind("5. Фракции", "Писать таблицу фракций в лог", false, "Выводить в BepInEx\\LogOutput.log список: ключ | название | фракция");
-            ShowOtherFaction = Config.Bind("5. Фракции", "Показывать чужую технику", false, "Показывать технику другой фракции в списке (серым, купить нельзя)");
+            MenuKey = L.Bind(Config, sCtl, rCtl, "Purchase menu", "Меню покупки", new KeyboardShortcut(KeyCode.F6),
+                "Open / close the purchase menu", "Открыть/закрыть меню покупки юнитов");
+            RotateKey = L.Bind(Config, sCtl, rCtl, "Rotate", "Повернуть", KeyCode.R,
+                "Rotate the unit while placing it (Shift — the other way)", "Повернуть юнит при расстановке (Shift — в обратную сторону)");
+            CameraPlaceKey = L.Bind(Config, sCtl, rCtl, "Place (camera)", "Поставить (камера)", KeyCode.G,
+                "Place the unit at the camera's aim point", "Поставить юнит в точку прицела в режиме камеры");
+            CancelKey = L.Bind(Config, sCtl, rCtl, "Cancel", "Отмена", KeyCode.X,
+                "Leave placement mode", "Выйти из режима расстановки");
+            HoldKey = L.Bind(Config, sCtl, rCtl, "Hold position", "Держать позицию", KeyCode.H,
+                "On the map: toggle hold position for the selected own units", "На карте: переключить «держать позицию» для выделенных своих юнитов");
+            AttackKey = L.Bind(Config, sCtl, rCtl, "Attack", "Атаковать", KeyCode.K,
+                "On the map: selected units open fire at the enemy / missile under the cursor from where they stand. Shift+key — advance to firing range. On empty ground — clear the target",
+                "На карте: выделенные юниты открывают огонь по врагу/ракете под курсором с текущей позиции. Shift+клавиша — выдвинуться на дистанцию огня. По пустому месту — сбросить цель");
+            MissileDefenseKey = L.Bind(Config, sCtl, rCtl, "Missile defence", "Перехват ракет", KeyCode.L,
+                "On the map: selected units pick and shoot down enemy missiles themselves (strategic and nuclear first)",
+                "На карте: выделенные юниты сами выбирают и сбивают вражеские ракеты (стратегические и ядерные — первыми)");
 
-            EnablePlayable = Config.Bind("6. Играбельная техника", "Включить", true, "Показывать технику из модов, за которую можно играть самому (KAR — наземка, BOTE — корабли). Выбираешь модули, покупаешь — и сразу садишься в неё");
+            RestrictToFaction = L.Bind(Config, sFac, rFac, "Own faction's equipment only", "Только техника своей фракции", true,
+                "BDF buys only BDF equipment, PALA only PALA (shared equipment is available to both)",
+                "BDF покупает только технику BDF, PALA — только PALA (общая техника доступна обеим)");
+            UnknownUnits = L.Bind(Config, sFac, rFac, "Units with unknown faction", "Техника без известной фракции", UnknownUnitPolicy.AllowForAll,
+                "Units never seen with any faction (usually from mods): AllowForAll — available to both, Hide — hide them",
+                "Что делать с юнитами, которые ни разу не встречались ни у одной фракции (обычно — из модов): AllowForAll — доступны обеим, Hide — скрыть");
+            FactionShareThreshold = L.Bind(Config, sFac, rFac, "Ownership threshold", "Порог принадлежности", 0.75f,
+                "If a faction uses a unit in at least this share of cases (missions, convoys), it is that faction's equipment; otherwise it is shared",
+                "Если юнит используется фракцией в ≥ этой доли случаев (миссии, конвои), он считается её техникой; иначе — общей",
+                new AcceptableValueRange<float>(0.5f, 1f));
+            FactionOverrides = L.Bind(Config, sFac, rFac, "Manual overrides", "Ручная привязка", "",
+                "Comma separated: key:BDF, key:PALA, key:ALL. Unit keys are written to LogOutput.log when \"Write faction table to log\" is on. Unit names work too",
+                "Через запятую: ключ:BDF, ключ:PALA, ключ:ALL. Ключи юнитов видны в LogOutput.log, если включить «Писать таблицу фракций в лог». Можно писать и имя юнита");
+            LogFactionTable = L.Bind(Config, sFac, rFac, "Write faction table to log", "Писать таблицу фракций в лог", false,
+                "Write the list key | name | faction to BepInEx\\LogOutput.log", "Выводить в BepInEx\\LogOutput.log список: ключ | название | фракция");
+            ShowOtherFaction = L.Bind(Config, sFac, rFac, "Show other faction's equipment", "Показывать чужую технику", false,
+                "Show the other faction's units in the list (greyed out, can't be bought)", "Показывать технику другой фракции в списке (серым, купить нельзя)");
 
+            EnablePlayable = L.Bind(Config, sPla, rPla, "Enable", "Включить", true,
+                "Show modded units you can drive yourself (KAR — ground, BOTE — ships). Choose modules, buy — and you are inside right away",
+                "Показывать технику из модов, за которую можно играть самому (KAR — наземка, BOTE — корабли). Выбираешь модули, покупаешь — и сразу садишься в неё");
 
-            LeaveKey = Config.Bind("1. Управление", "Выйти из техники KAR/BOTE", new KeyboardShortcut(KeyCode.J), "Выйти из текущей техники KAR/BOTE — она останется стоять на месте без экипажа");
+            LeaveKey = L.Bind(Config, sCtl, rCtl, "Leave KAR/BOTE vehicle", "Выйти из техники KAR/BOTE", new KeyboardShortcut(KeyCode.J),
+                "Leave the current KAR/BOTE vehicle — it stays where it is without a crew", "Выйти из текущей техники KAR/BOTE — она останется стоять на месте без экипажа");
 
-            EnableStatic = Config.Bind("8. Оборона и снабжение", "Включить", true, "Покупка стационарной ПВО, огневых точек, радаров, складов и контейнеров (боеприпасы, топливо, ремонт)");
-            ShowCivilBuildings = Config.Bind("8. Оборона и снабжение", "Показывать гражданские постройки", false, "Добавить в список обычные здания без оружия");
-            StaticCapturable = Config.Bind("8. Оборона и снабжение", "Постройки можно захватить", false, "Если включено, враг может захватить твои постройки, как обычные здания на базах");
+            EnableStatic = L.Bind(Config, sDef, rDef, "Enable", "Включить", true,
+                "Buy static air defence, gun positions, radars, depots and containers (ammo, fuel, repair)",
+                "Покупка стационарной ПВО, огневых точек, радаров, складов и контейнеров (боеприпасы, топливо, ремонт)");
+            ShowCivilBuildings = L.Bind(Config, sDef, rDef, "Show civil buildings", "Показывать гражданские постройки", false,
+                "Add ordinary buildings without weapons to the list", "Добавить в список обычные здания без оружия");
+            StaticCapturable = L.Bind(Config, sDef, rDef, "Buildings can be captured", "Постройки можно захватить", false,
+                "If on, the enemy can capture your buildings like ordinary base buildings", "Если включено, враг может захватить твои постройки, как обычные здания на базах");
 
-            Funds = Config.Bind("2. Экономика", "Источник денег", FundsSource.Player, "Player — личный бюджет игрока (как при покупке самолётов), Faction — казна фракции");
-            PriceMultiplier = Config.Bind("2. Экономика", "Множитель цены", 1f, new ConfigDescription("Цена = стоимость юнита в игре × множитель", new AcceptableValueRange<float>(0f, 10f)));
-            MinPrice = Config.Bind("2. Экономика", "Минимальная цена", 0.5f, "Минимальная цена юнита (млн), если у юнита в игре стоимость 0");
-            MaxOwnUnits = Config.Bind("2. Экономика", "Лимит своих юнитов", 60, new ConfigDescription("Сколько юнитов, купленных себе, может быть живо одновременно (1–" + MaxUnitLimit + "). Меняется и прямо в меню покупки", new AcceptableValueRange<int>(1, MaxUnitLimit)));
-            MaxFactionUnits = Config.Bind("2. Экономика", "Лимит юнитов для фракции", 60, new ConfigDescription("Сколько юнитов, купленных для фракции, может быть живо одновременно (1–" + MaxUnitLimit + "). Считается отдельно от своих. Меняется и прямо в меню покупки", new AcceptableValueRange<int>(1, MaxUnitLimit)));
-            ScrapRefundPercent = Config.Bind("2. Экономика", "Возврат при списании, %", 50f, new ConfigDescription("Сколько процентов цены покупки возвращается, если списать (убрать) своего юнита", new AcceptableValueRange<float>(0f, 100f)));
-            ScrapKey = Config.Bind("1. Управление", "Списать юнитов", KeyCode.Delete, "На карте: убрать выделенных купленных юнитов с возвратом части денег");
+            Funds = L.Bind(Config, sEco, rEco, "Funds source", "Источник денег", FundsSource.Player,
+                "Player — your personal budget (like buying aircraft), Faction — the faction treasury",
+                "Player — личный бюджет игрока (как при покупке самолётов), Faction — казна фракции");
+            PriceMultiplier = L.Bind(Config, sEco, rEco, "Price multiplier", "Множитель цены", 1f,
+                "Price = the unit's in-game cost × multiplier", "Цена = стоимость юнита в игре × множитель", new AcceptableValueRange<float>(0f, 10f));
+            MinPrice = L.Bind(Config, sEco, rEco, "Minimum price", "Минимальная цена", 0.5f,
+                "Minimum unit price (millions) if the unit costs 0 in the game", "Минимальная цена юнита (млн), если у юнита в игре стоимость 0");
+            MaxOwnUnits = L.Bind(Config, sEco, rEco, "Own unit limit", "Лимит своих юнитов", 60,
+                "How many units bought for yourself can be alive at the same time (1–" + MaxUnitLimit + "). Also adjustable in the purchase menu",
+                "Сколько юнитов, купленных себе, может быть живо одновременно (1–" + MaxUnitLimit + "). Меняется и прямо в меню покупки",
+                new AcceptableValueRange<int>(1, MaxUnitLimit));
+            MaxFactionUnits = L.Bind(Config, sEco, rEco, "Faction unit limit", "Лимит юнитов для фракции", 60,
+                "How many units bought for the faction can be alive at the same time (1–" + MaxUnitLimit + "). Counted separately from yours. Also adjustable in the purchase menu",
+                "Сколько юнитов, купленных для фракции, может быть живо одновременно (1–" + MaxUnitLimit + "). Считается отдельно от своих. Меняется и прямо в меню покупки",
+                new AcceptableValueRange<int>(1, MaxUnitLimit));
+            ScrapRefundPercent = L.Bind(Config, sEco, rEco, "Scrap refund, %", "Возврат при списании, %", 50f,
+                "Share of the purchase price you get back when you scrap one of your units", "Сколько процентов цены покупки возвращается, если списать (убрать) своего юнита",
+                new AcceptableValueRange<float>(0f, 100f));
+            ScrapKey = L.Bind(Config, sCtl, rCtl, "Scrap units", "Списать юнитов", KeyCode.Delete,
+                "On the map: remove the selected purchased units and get part of the money back", "На карте: убрать выделенных купленных юнитов с возвратом части денег");
 
-            KillRewardPercent = Config.Bind("2. Экономика", "Доля награды за уничтожения, %", 50f, new ConfigDescription("Когда твои купленные юниты уничтожают врага или ракету, ты получаешь этот % от того, что получил бы пилот-игрок за то же уничтожение (0 — выключить)", new AcceptableValueRange<float>(0f, 200f)));
-            RewardFromFactionUnits = Config.Bind("2. Экономика", "Награда и за юнитов, купленных фракции", true, "Получать долю и за уничтожения юнитами, которых ты купил для фракции (ими управляет ИИ)");
+            KillRewardPercent = L.Bind(Config, sEco, rEco, "Kill reward share, %", "Доля награды за уничтожения, %", 50f,
+                "When your purchased units destroy an enemy or a missile you get this % of what a pilot would get for the same kill (0 — off)",
+                "Когда твои купленные юниты уничтожают врага или ракету, ты получаешь этот % от того, что получил бы пилот-игрок за то же уничтожение (0 — выключить)",
+                new AcceptableValueRange<float>(0f, 200f));
+            RewardFromFactionUnits = L.Bind(Config, sEco, rEco, "Reward for faction units too", "Награда и за юнитов, купленных фракции", true,
+                "Also get the share for kills by units you bought for the faction (controlled by the AI)",
+                "Получать долю и за уничтожения юнитами, которых ты купил для фракции (ими управляет ИИ)");
 
-            RestrictToTerritory = Config.Bind("3. Территория", "Только своя территория", true, "Разрешать расстановку только рядом со своими базами и юнитами");
-            AirbaseRadius = Config.Bind("3. Территория", "Радиус от базы (наземка), м", 12000f, "Наземную технику можно ставить в этом радиусе от своей авиабазы");
-            NavalAirbaseRadius = Config.Bind("3. Территория", "Радиус от базы (флот), м", 30000f, "Корабли можно ставить в этом радиусе от своей авиабазы — флот можно отстроить даже без живых авианосцев");
-            FriendlyUnitRadius = Config.Bind("3. Территория", "Радиус от своих юнитов, м", 3000f, "Ставить можно рядом со своей наземной техникой, кораблями и зданиями");
-            MinEnemyDistance = Config.Bind("3. Территория", "Мин. дистанция до врага, м", 2000f, "Нельзя ставить ближе к вражеским наземным юнитам/кораблям/зданиям (0 — без ограничения)");
-            MinShipDepth = Config.Bind("3. Территория", "Мин. глубина для корабля, м", 8f, "Минимальная глубина под кораблём (проверяется по носу, корме и центру)");
+            RestrictToTerritory = L.Bind(Config, sTer, rTer, "Own territory only", "Только своя территория", true,
+                "Allow placement only near your own bases and units", "Разрешать расстановку только рядом со своими базами и юнитами");
+            AirbaseRadius = L.Bind(Config, sTer, rTer, "Radius from base (ground), m", "Радиус от базы (наземка), м", 12000f,
+                "Ground units can be placed within this radius of your airbase", "Наземную технику можно ставить в этом радиусе от своей авиабазы");
+            NavalAirbaseRadius = L.Bind(Config, sTer, rTer, "Radius from base (naval), m", "Радиус от базы (флот), м", 30000f,
+                "Ships can be placed within this radius of your airbase — you can build a fleet even without living carriers",
+                "Корабли можно ставить в этом радиусе от своей авиабазы — флот можно отстроить даже без живых авианосцев");
+            FriendlyUnitRadius = L.Bind(Config, sTer, rTer, "Radius from own units, m", "Радиус от своих юнитов, м", 3000f,
+                "You can place near your own vehicles, ships and buildings", "Ставить можно рядом со своей наземной техникой, кораблями и зданиями");
+            MinEnemyDistance = L.Bind(Config, sTer, rTer, "Min. distance to enemy, m", "Мин. дистанция до врага, м", 2000f,
+                "Can't place closer to enemy ground units / ships / buildings (0 — no limit)", "Нельзя ставить ближе к вражеским наземным юнитам/кораблям/зданиям (0 — без ограничения)");
+            MinShipDepth = L.Bind(Config, sTer, rTer, "Min. water depth for a ship, m", "Мин. глубина для корабля, м", 8f,
+                "Minimum water depth under a ship (checked at bow, stern and centre)", "Минимальная глубина под кораблём (проверяется по носу, корме и центру)");
 
-            SpawnHoldingPosition = Config.Bind("4. Поведение", "Спавнить в режиме «держать позицию»", true, "Купленные юниты стоят на месте и не уезжают выполнять задачи ИИ, пока ты не дашь приказ");
-            GroundAttackStandoff = Config.Bind("4. Поведение", "Дистанция атаки (наземка), м", 1500f, "На каком расстоянии от цели останавливается наземка при приказе «Атаковать»");
-            NavalAttackStandoff = Config.Bind("4. Поведение", "Дистанция атаки (флот), м", 9000f, "На каком расстоянии от цели останавливаются корабли при приказе «Атаковать»");
-            RotateStep = Config.Bind("4. Поведение", "Шаг поворота, град", 45f, "На сколько градусов поворачивать юнит клавишей поворота");
+            SpawnHoldingPosition = L.Bind(Config, sBeh, rBeh, "Spawn in hold position", "Спавнить в режиме «держать позицию»", true,
+                "Purchased units stay put and don't drive off on AI tasks until you give an order",
+                "Купленные юниты стоят на месте и не уезжают выполнять задачи ИИ, пока ты не дашь приказ");
+            GroundAttackStandoff = L.Bind(Config, sBeh, rBeh, "Attack distance (ground), m", "Дистанция атаки (наземка), м", 1500f,
+                "How far from the target ground units stop when ordered to attack", "На каком расстоянии от цели останавливается наземка при приказе «Атаковать»");
+            NavalAttackStandoff = L.Bind(Config, sBeh, rBeh, "Attack distance (naval), m", "Дистанция атаки (флот), м", 9000f,
+                "How far from the target ships stop when ordered to attack", "На каком расстоянии от цели останавливаются корабли при приказе «Атаковать»");
+            RotateStep = L.Bind(Config, sBeh, rBeh, "Rotation step, deg", "Шаг поворота, град", 45f,
+                "How many degrees the rotate key turns the unit", "На сколько градусов поворачивать юнит клавишей поворота");
 
             try
             {

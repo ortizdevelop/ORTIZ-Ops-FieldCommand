@@ -9,50 +9,53 @@ namespace FieldCommand
         public struct Group
         {
             public int Order;
-            public string Name;
+            public string NameEn;
+            public string NameRu;
+            public string Name => L.T(NameEn, NameRu);
 
-            public Group(int order, string name)
+            public Group(int order, string nameEn, string nameRu)
             {
                 Order = order;
-                Name = name;
+                NameEn = nameEn;
+                NameRu = nameRu;
             }
         }
 
         // ---- ground ----
-        public static readonly Group AirDefenseSam = new Group(10, "ПВО: зенитные ракетные комплексы");
-        public static readonly Group AirDefenseIr = new Group(11, "ПВО: ближнего действия (ИК)");
-        public static readonly Group AirDefenseGun = new Group(12, "ПВО: зенитная артиллерия");
-        public static readonly Group Radar = new Group(13, "Радары и РЛС");
-        public static readonly Group Artillery = new Group(20, "Артиллерия и ракетные комплексы");
-        public static readonly Group Tanks = new Group(30, "Атака: танки");
-        public static readonly Group Armor = new Group(31, "Атака: бронетехника (БТР/БМП)");
-        public static readonly Group Light = new Group(40, "Лёгкая техника и разведка");
-        public static readonly Group Drones = new Group(41, "Беспилотная техника");
-        public static readonly Group Logistics = new Group(50, "Снабжение и логистика");
+        public static readonly Group AirDefenseSam = new Group(10, "Air defence: SAM systems", "ПВО: зенитные ракетные комплексы");
+        public static readonly Group AirDefenseIr = new Group(11, "Air defence: short range (IR)", "ПВО: ближнего действия (ИК)");
+        public static readonly Group AirDefenseGun = new Group(12, "Air defence: AA guns", "ПВО: зенитная артиллерия");
+        public static readonly Group Radar = new Group(13, "Radars", "Радары и РЛС");
+        public static readonly Group Artillery = new Group(20, "Artillery and rocket systems", "Артиллерия и ракетные комплексы");
+        public static readonly Group Tanks = new Group(30, "Assault: tanks", "Атака: танки");
+        public static readonly Group Armor = new Group(31, "Assault: armour (APC/IFV)", "Атака: бронетехника (БТР/БМП)");
+        public static readonly Group Light = new Group(40, "Light vehicles and recon", "Лёгкая техника и разведка");
+        public static readonly Group Drones = new Group(41, "Unmanned vehicles", "Беспилотная техника");
+        public static readonly Group Logistics = new Group(50, "Supply and logistics", "Снабжение и логистика");
 
         // ---- naval ----
-        public static readonly Group Carrier = new Group(110, "Авианосцы");
-        public static readonly Group Amphib = new Group(111, "Десантные вертолётоносцы (УДК)");
-        public static readonly Group Dock = new Group(112, "Десантные корабли-доки");
-        public static readonly Group Cruiser = new Group(120, "Крейсеры и линкоры");
-        public static readonly Group Destroyer = new Group(121, "Эсминцы");
-        public static readonly Group Frigate = new Group(122, "Фрегаты");
-        public static readonly Group Corvette = new Group(123, "Корветы");
-        public static readonly Group LandingCraft = new Group(130, "Десантные катера");
-        public static readonly Group Patrol = new Group(131, "Патрульные катера");
-        public static readonly Group Support = new Group(140, "Корабли снабжения");
+        public static readonly Group Carrier = new Group(110, "Aircraft carriers", "Авианосцы");
+        public static readonly Group Amphib = new Group(111, "Amphibious assault ships (LHA)", "Десантные вертолётоносцы (УДК)");
+        public static readonly Group Dock = new Group(112, "Landing ship docks", "Десантные корабли-доки");
+        public static readonly Group Cruiser = new Group(120, "Cruisers and battleships", "Крейсеры и линкоры");
+        public static readonly Group Destroyer = new Group(121, "Destroyers", "Эсминцы");
+        public static readonly Group Frigate = new Group(122, "Frigates", "Фрегаты");
+        public static readonly Group Corvette = new Group(123, "Corvettes", "Корветы");
+        public static readonly Group LandingCraft = new Group(130, "Landing craft", "Десантные катера");
+        public static readonly Group Patrol = new Group(131, "Patrol boats", "Патрульные катера");
+        public static readonly Group Support = new Group(140, "Supply ships", "Корабли снабжения");
 
         // ---- static positions & supplies ----
-        public static readonly Group StaticSam = new Group(300, "Стационарная ПВО");
-        public static readonly Group StaticGuns = new Group(301, "Огневые точки и укрепления");
-        public static readonly Group StaticRadar = new Group(302, "Стационарные радары");
-        public static readonly Group Depots = new Group(310, "Склады и снабжение");
-        public static readonly Group ContainersAmmo = new Group(320, "Контейнеры: боеприпасы");
-        public static readonly Group ContainersFuel = new Group(321, "Контейнеры: топливо");
-        public static readonly Group ContainersRepair = new Group(322, "Контейнеры: ремонт");
-        public static readonly Group ContainersOther = new Group(323, "Контейнеры: прочее");
-        public static readonly Group Factories = new Group(330, "Заводы");
-        public static readonly Group OtherBuildings = new Group(340, "Прочие постройки");
+        public static readonly Group StaticSam = new Group(300, "Static air defence", "Стационарная ПВО");
+        public static readonly Group StaticGuns = new Group(301, "Gun positions and fortifications", "Огневые точки и укрепления");
+        public static readonly Group StaticRadar = new Group(302, "Static radars", "Стационарные радары");
+        public static readonly Group Depots = new Group(310, "Depots and supplies", "Склады и снабжение");
+        public static readonly Group ContainersAmmo = new Group(320, "Containers: ammo", "Контейнеры: боеприпасы");
+        public static readonly Group ContainersFuel = new Group(321, "Containers: fuel", "Контейнеры: топливо");
+        public static readonly Group ContainersRepair = new Group(322, "Containers: repair", "Контейнеры: ремонт");
+        public static readonly Group ContainersOther = new Group(323, "Containers: other", "Контейнеры: прочее");
+        public static readonly Group Factories = new Group(330, "Factories", "Заводы");
+        public static readonly Group OtherBuildings = new Group(340, "Other buildings", "Прочие постройки");
 
         private static bool HasComp(GameObject prefab, string typeName)
         {
@@ -134,8 +137,8 @@ namespace FieldCommand
         }
 
         // ---- playable (mods) ----
-        public static readonly Group PlayGround = new Group(200, "Играбельная наземка (сесть за руль)");
-        public static readonly Group PlayNaval = new Group(201, "Играбельные корабли (встать за штурвал)");
+        public static readonly Group PlayGround = new Group(200, "Playable ground vehicles (drive yourself)", "Играбельная наземка (сесть за руль)");
+        public static readonly Group PlayNaval = new Group(201, "Playable ships (take the helm)", "Играбельные корабли (встать за штурвал)");
 
         public static Group Classify(UnitDefinition def)
         {

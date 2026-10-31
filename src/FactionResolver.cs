@@ -53,7 +53,7 @@ namespace FieldCommand
 
         public static string TagOf(string factionName)
         {
-            if (factionName == Shared) return "общая";
+            if (factionName == Shared) return L.T("shared", "общая");
             if (string.IsNullOrEmpty(factionName)) return "?";
             foreach (var f in FactionRegistry.factions)
             {
@@ -185,7 +185,7 @@ namespace FieldCommand
 
         private static string ResolveOverrideValue(string val)
         {
-            if (val.Equals("ALL", StringComparison.OrdinalIgnoreCase) || val == "*" || val.Equals("общая", StringComparison.OrdinalIgnoreCase))
+            if (val.Equals("ALL", StringComparison.OrdinalIgnoreCase) || val == "*" || val.Equals("общая", StringComparison.OrdinalIgnoreCase) || val.Equals("shared", StringComparison.OrdinalIgnoreCase))
             {
                 return Shared;
             }

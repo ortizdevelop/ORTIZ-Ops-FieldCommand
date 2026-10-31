@@ -203,7 +203,7 @@ namespace FieldCommand
                 {
                     map.Maximize();
                 }
-                Toast("ЛКМ — поставить, " + Plugin.RotateKey.Value + " — повернуть, " + Plugin.CancelKey.Value + " — отмена", 5f);
+                Toast(L.T("LMB — place, ", "ЛКМ — поставить, ") + Plugin.RotateKey.Value + L.T(" — rotate, ", " — повернуть, ") + Plugin.CancelKey.Value + L.T(" — cancel", " — отмена"), 5f);
             }
             else
             {
@@ -213,7 +213,7 @@ namespace FieldCommand
                     map.Minimize();
                 }
                 TrySwitchToFreeCamera();
-                Toast(Plugin.CameraPlaceKey.Value + " — поставить в прицел, " + Plugin.RotateKey.Value + " — повернуть, " + Plugin.CancelKey.Value + " — отмена", 5f);
+                Toast(Plugin.CameraPlaceKey.Value + L.T(" — place at the aim point, ", " — поставить в прицел, ") + Plugin.RotateKey.Value + L.T(" — rotate, ", " — повернуть, ") + Plugin.CancelKey.Value + L.T(" — cancel", " — отмена"), 5f);
             }
         }
 
@@ -232,7 +232,7 @@ namespace FieldCommand
             if (GUILayout.Button("+", GUILayout.Width(26))) v += 1;
             if (GUILayout.Button("+10", GUILayout.Width(38))) v += 10;
             v = Mathf.Clamp(v, 1, max);
-            GUILayout.Label($"{v} (сейчас {alive})", GUILayout.Width(120));
+            GUILayout.Label(L.T($"{v} (now {alive})", $"{v} (сейчас {alive})"), GUILayout.Width(120));
             GUILayout.EndHorizontal();
             if (v != entry.Value) entry.Value = v;
         }
@@ -281,7 +281,7 @@ namespace FieldCommand
             if (Input.GetKeyDown(Plugin.CancelKey.Value) || Input.GetKeyDown(KeyCode.Backspace))
             {
                 ExitPlacement();
-                Toast("Расстановка отменена");
+                Toast(L.T("Placement cancelled", "Расстановка отменена"));
                 return true;
             }
             if (strike != null && strike.HasArea)
@@ -334,7 +334,7 @@ namespace FieldCommand
             }
             if (!preview.Ok)
             {
-                Toast("Нельзя: " + preview.Reason);
+                Toast(L.T("Not allowed: ", "Нельзя: ") + preview.Reason);
                 return;
             }
             if (strike != null)
@@ -351,13 +351,13 @@ namespace FieldCommand
             var unit = GameApi.Spawn(selected, preview);
             if (unit == null)
             {
-                Toast("Не удалось заспавнить " + selected.Name);
+                Toast(L.T("Failed to spawn ", "Не удалось заспавнить ") + selected.Name);
                 return;
             }
             if (selected.Supply)
             {
                 // ammo / fuel / repair containers and depots are just objects — no unit slot, not in the lists
-                Toast($"Поставлено: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))}");
+                Toast(L.T($"Placed: {selected.Name} for {GameApi.Money(GameApi.TotalPrice(selected))}", $"Поставлено: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))}"));
                 bool sh = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
                 if (!repeatPlacement && !sh) ExitPlacement();
                 return;
@@ -366,12 +366,12 @@ namespace FieldCommand
             if (GameApi.PendingForFaction)
             {
                 factionBought.Add(unit);
-                Toast($"Куплено для фракции: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))} — им управляет ИИ");
+                Toast(L.T($"Bought for the faction: {selected.Name} for {GameApi.Money(GameApi.TotalPrice(selected))} — the AI controls it", $"Куплено для фракции: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))} — им управляет ИИ"));
             }
             else
             {
                 purchased.Add(unit);
-                Toast($"Куплено себе: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))}");
+                Toast(L.T($"Bought for you: {selected.Name} for {GameApi.Money(GameApi.TotalPrice(selected))}", $"Куплено себе: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))}"));
             }
             if (selected.Playable)
             {
@@ -601,12 +601,12 @@ namespace FieldCommand
                 var mineSel = SelectedFriendlyCommandables().Where(u => purchased.Contains(u) || factionBought.Contains(u)).ToList();
                 if (mineSel.Count == 0)
                 {
-                    Toast("Выдели на карте своих купленных юнитов");
+                    Toast(L.T("Select your purchased units on the map", "Выдели на карте своих купленных юнитов"));
                     return;
                 }
                 float total = mineSel.Sum(RefundFor);
                 foreach (var u in mineSel) Scrap(u, false);
-                Toast($"Списано юнитов: {mineSel.Count}, возврат {GameApi.Money(total)}");
+                Toast(L.T($"Scrapped units: {mineSel.Count}, refund {GameApi.Money(total)}", $"Списано юнитов: {mineSel.Count}, возврат {GameApi.Money(total)}"));
                 return;
             }
             if (!hold && !attack && !defense)
@@ -624,7 +624,7 @@ namespace FieldCommand
             var sel = SelectedFriendlyCommandables();
             if (sel.Count == 0)
             {
-                Toast("Выдели свои юниты на карте");
+                Toast(L.T("Select your units on the map", "Выдели свои юниты на карте"));
                 return;
             }
             if (hold)
@@ -639,7 +639,7 @@ namespace FieldCommand
                         GameApi.Stop(u);
                     }
                 }
-                Toast(newHold ? $"Держать позицию: {sel.Count}" : $"Свободный режим: {sel.Count}");
+                Toast(newHold ? L.T($"Hold position: {sel.Count}", $"Держать позицию: {sel.Count}") : L.T($"Free to move: {sel.Count}", $"Свободный режим: {sel.Count}"));
                 return;
             }
             if (defense)
@@ -651,7 +651,7 @@ namespace FieldCommand
                     else FocusFire.MissileDefense.Remove(u);
                 }
                 int capable = sel.Count(u => FocusFire.MaxRange(u) > 0f);
-                Toast(on ? $"Перехват ракет ВКЛ: {sel.Count} (ядерные и баллистические — в первую очередь)" : $"Перехват ракет ВЫКЛ: {sel.Count}");
+                Toast(on ? L.T($"Missile defence ON: {sel.Count} (nuclear and ballistic first)", $"Перехват ракет ВКЛ: {sel.Count} (ядерные и баллистические — в первую очередь)") : L.T($"Missile defence OFF: {sel.Count}", $"Перехват ракет ВЫКЛ: {sel.Count}"));
                 return;
             }
             var map = SceneSingleton<DynamicMap>.i;
@@ -676,7 +676,7 @@ namespace FieldCommand
                     FocusFire.Clear(u);
                     attackOrders.Remove(u);
                 }
-                Toast($"Цель сброшена ({sel.Count}). Чтобы выбрать цель — наведи курсор на видимого врага или ракету");
+                Toast(L.T($"Target cleared ({sel.Count}). To pick a target, point at a visible enemy or missile", $"Цель сброшена ({sel.Count}). Чтобы выбрать цель — наведи курсор на видимого врага или ракету"));
                 return;
             }
             bool approach = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
@@ -690,9 +690,9 @@ namespace FieldCommand
                 else attackOrders.Remove(u);
             }
             nextAttackUpdate = 0f;
-            string tname = target is Missile ? "ракета " + (target.definition?.unitName ?? "") : (target.definition?.unitName ?? target.name);
-            string tail = approach ? ", остальные выдвигаются на дистанцию огня" : (inRange < sel.Count ? ", остальные откроют огонь, когда цель войдёт в зону (Shift+" + Plugin.AttackKey.Value + " — выдвинуться)" : "");
-            Toast($"Огонь по: {tname}. В зоне досягаемости {inRange} из {sel.Count}{tail}");
+            string tname = target is Missile ? L.T("missile ", "ракета ") + (target.definition?.unitName ?? "") : (target.definition?.unitName ?? target.name);
+            string tail = approach ? L.T(", the rest advance to firing range", ", остальные выдвигаются на дистанцию огня") : (inRange < sel.Count ? L.T(", the rest open fire when the target is in range (Shift+", ", остальные откроют огонь, когда цель войдёт в зону (Shift+") + Plugin.AttackKey.Value + L.T(" — advance)", " — выдвинуться)") : "");
+            Toast(L.T($"Firing at: {tname}. In range: {inRange} of {sel.Count}{tail}", $"Огонь по: {tname}. В зоне досягаемости {inRange} из {sel.Count}{tail}"));
         }
 
         private static Unit FindTargetNear(FactionHQ hq, GlobalPosition pos, float radius)
@@ -823,10 +823,10 @@ namespace FieldCommand
 
             if (menuOpen)
             {
-                windowRect = GUILayout.Window(0x46434D, windowRect, DrawWindow, "ORTIZ Ops - FieldCommand — покупка техники");
+                windowRect = GUILayout.Window(0x46434D, windowRect, DrawWindow, L.T("ORTIZ Ops - FieldCommand — buy units", "ORTIZ Ops - FieldCommand — покупка техники"));
                 if (draft != null)
                 {
-                    loadoutRect = GUILayout.Window(0x46434E, loadoutRect, DrawLoadoutWindow, "Модули и вооружение");
+                    loadoutRect = GUILayout.Window(0x46434E, loadoutRect, DrawLoadoutWindow, L.T("Modules and weapons", "Модули и вооружение"));
                 }
             }
 
@@ -851,24 +851,24 @@ namespace FieldCommand
         {
             var r = HudRect;
             string how = mode == PlaceMode.Map
-                ? $"ЛКМ — поставить | {Plugin.RotateKey.Value} — поворот | {Plugin.CancelKey.Value} — выход"
-                : $"{Plugin.CameraPlaceKey.Value}/Enter — поставить в прицел | {Plugin.RotateKey.Value} — поворот | {Plugin.CancelKey.Value} — выход";
+                ? L.T($"LMB — place | {Plugin.RotateKey.Value} — rotate | {Plugin.CancelKey.Value} — exit", $"ЛКМ — поставить | {Plugin.RotateKey.Value} — поворот | {Plugin.CancelKey.Value} — выход")
+                : L.T($"{Plugin.CameraPlaceKey.Value}/Enter — place at the aim point | {Plugin.RotateKey.Value} — rotate | {Plugin.CancelKey.Value} — exit", $"{Plugin.CameraPlaceKey.Value}/Enter — поставить в прицел | {Plugin.RotateKey.Value} — поворот | {Plugin.CancelKey.Value} — выход");
             if (strike != null && strike.HasArea)
             {
-                how = (strike.Point ? "ТОЧЕЧНО" : $"ОБЛАСТЬ R={strike.Spread:0} м") + " | T — точечно/область | [ ] или − + — радиус | " + how;
+                how = (strike.Point ? L.T("POINT", "ТОЧЕЧНО") : L.T($"AREA R={strike.Spread:0} m", $"ОБЛАСТЬ R={strike.Spread:0} м")) + L.T(" | T — point/area | [ ] or − + — radius | ", " | T — точечно/область | [ ] или − + — радиус | ") + how;
             }
             GUI.Box(r, "", boxStyle);
             GUILayout.BeginArea(new Rect(r.x + 8, r.y + 4, r.width - 16, r.height - 8));
-            GUILayout.Label($"{selected.Name}  —  {GameApi.Money(GameApi.TotalPrice(selected))}    Бюджет: {GameApi.Money(GameApi.GetFunds())}    Курс: {heading:0}°", headerStyle);
+            GUILayout.Label(L.T($"{selected.Name}  —  {GameApi.Money(GameApi.TotalPrice(selected))}    Budget: {GameApi.Money(GameApi.GetFunds())}    Heading: {heading:0}°", $"{selected.Name}  —  {GameApi.Money(GameApi.TotalPrice(selected))}    Бюджет: {GameApi.Money(GameApi.GetFunds())}    Курс: {heading:0}°"), headerStyle);
             GUILayout.BeginHorizontal();
             GUILayout.Label(how);
-            repeatPlacement = GUILayout.Toggle(repeatPlacement, "Ставить ещё", GUILayout.Width(110));
+            repeatPlacement = GUILayout.Toggle(repeatPlacement, L.T("Place more", "Ставить ещё"), GUILayout.Width(110));
             GUILayout.EndHorizontal();
             if (!selected.Playable && strike == null)
             {
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Toggle(!buyForFaction, " Себе (мои приказы)", GUILayout.Width(170))) buyForFaction = false;
-                if (GUILayout.Toggle(buyForFaction, " Фракции (ИИ сам управляет)", GUILayout.Width(220))) buyForFaction = true;
+                if (GUILayout.Toggle(!buyForFaction, L.T(" For me (my orders)", " Себе (мои приказы)"), GUILayout.Width(170))) buyForFaction = false;
+                if (GUILayout.Toggle(buyForFaction, L.T(" For the faction (AI controls)", " Фракции (ИИ сам управляет)"), GUILayout.Width(220))) buyForFaction = true;
                 GUILayout.EndHorizontal();
             }
             GUILayout.EndArea();
@@ -901,8 +901,8 @@ namespace FieldCommand
                             Dot(Vector2.Lerp(end - d * 14f - perp * 9f, end, t), col, 4f);
                         }
                         Vector2 st = c - d * half;
-                        GUI.Label(new Rect(st.x - 30, st.y + 4, 120, 22), "НАЧАЛО", okStyle);
-                        GUI.Label(new Rect(end.x - 20, end.y + 4, 120, 22), "КОНЕЦ", badStyle);
+                        GUI.Label(new Rect(st.x - 30, st.y + 4, 120, 22), L.T("START", "НАЧАЛО"), okStyle);
+                        GUI.Label(new Rect(end.x - 20, end.y + 4, 120, 22), L.T("END", "КОНЕЦ"), badStyle);
                     }
                     else
                     {
@@ -910,7 +910,7 @@ namespace FieldCommand
                     }
                 }
             }
-            GUI.Label(new Rect(c.x + 18, c.y + 6, 360, 24), preview.Ok ? "OK: " + selected.Name : "НЕЛЬЗЯ: " + preview.Reason, preview.Ok ? okStyle : badStyle);
+            GUI.Label(new Rect(c.x + 18, c.y + 6, 360, 24), preview.Ok ? "OK: " + selected.Name : L.T("NOT ALLOWED: ", "НЕЛЬЗЯ: ") + preview.Reason, preview.Ok ? okStyle : badStyle);
         }
 
         private static void Dot(Vector2 p, Color col, float size)
@@ -961,7 +961,7 @@ namespace FieldCommand
             Vector3 sp = cam.WorldToScreenPoint(centre);
             if (sp.z <= 0f) return;
             Vector2 c = new Vector2(sp.x, Screen.height - sp.y);
-            GUI.Label(new Rect(c.x + 16, c.y - 30, 360, 24), preview.Ok ? "OK: " + selected.Name : "НЕЛЬЗЯ: " + preview.Reason, preview.Ok ? okStyle : badStyle);
+            GUI.Label(new Rect(c.x + 16, c.y - 30, 360, 24), preview.Ok ? "OK: " + selected.Name : L.T("NOT ALLOWED: ", "НЕЛЬЗЯ: ") + preview.Reason, preview.Ok ? okStyle : badStyle);
         }
 
         private bool ToScreen(Camera cam, Vector3 world, out Vector2 gui)
@@ -1008,8 +1008,8 @@ namespace FieldCommand
                     if (ToScreen(cam, OnGround(Vector3.Lerp(back - side * Mathf.Max(len * 0.03f, 6f), tip, t)), out var g2)) Dot(g2, col, 3f);
                 }
             }
-            if (ToScreen(cam, OnGround(a), out var ga)) GUI.Label(new Rect(ga.x - 30, ga.y - 26, 120, 22), "НАЧАЛО", okStyle);
-            if (ToScreen(cam, OnGround(b), out var gb)) GUI.Label(new Rect(gb.x - 20, gb.y - 26, 120, 22), "КОНЕЦ ►", badStyle);
+            if (ToScreen(cam, OnGround(a), out var ga)) GUI.Label(new Rect(ga.x - 30, ga.y - 26, 120, 22), L.T("START", "НАЧАЛО"), okStyle);
+            if (ToScreen(cam, OnGround(b), out var gb)) GUI.Label(new Rect(gb.x - 20, gb.y - 26, 120, 22), L.T("END ►", "КОНЕЦ ►"), badStyle);
         }
 
         private static void DrawHeadingArrow(Vector2 centre, float headingDeg, Color color)
@@ -1033,30 +1033,31 @@ namespace FieldCommand
         {
             GameApi.TryGetLocal(out _, out var hq);
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"Бюджет ({(Plugin.Funds.Value == FundsSource.Player ? "личный" : "фракции")}): {GameApi.Money(GameApi.GetFunds())}", headerStyle);
+            string fundsKind = Plugin.Funds.Value == FundsSource.Player ? L.T("personal", "личный") : L.T("faction", "фракции");
+            GUILayout.Label(L.T($"Budget ({fundsKind}): {GameApi.Money(GameApi.GetFunds())}", $"Бюджет ({fundsKind}): {GameApi.Money(GameApi.GetFunds())}"), headerStyle);
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Фракция: " + FactionResolver.TagOf(FactionResolver.FactionNameOf(hq)), headerStyle);
+            GUILayout.Label(L.T("Faction: ", "Фракция: ") + FactionResolver.TagOf(FactionResolver.FactionNameOf(hq)), headerStyle);
             GUILayout.Space(10);
-            GUILayout.Label($"Мои: {purchased.Count}{Lim(Plugin.MaxOwnUnits.Value)}  Фракции: {factionBought.Count}{Lim(Plugin.MaxFactionUnits.Value)}");
+            GUILayout.Label(L.T($"Mine: {purchased.Count}{Lim(Plugin.MaxOwnUnits.Value)}  Faction: {factionBought.Count}{Lim(Plugin.MaxFactionUnits.Value)}", $"Мои: {purchased.Count}{Lim(Plugin.MaxOwnUnits.Value)}  Фракции: {factionBought.Count}{Lim(Plugin.MaxFactionUnits.Value)}"));
             if (Plugin.KillRewardPercent.Value > 0f)
             {
-                GUILayout.Label($"  Заработали: {GameApi.Money(KillReward.SessionTotal)}");
+                GUILayout.Label(L.T($"  Earned: {GameApi.Money(KillReward.SessionTotal)}", $"  Заработали: {GameApi.Money(KillReward.SessionTotal)}"));
             }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Покупать:", GUILayout.Width(70));
-            if (GUILayout.Toggle(!buyForFaction, " Себе — стоят на месте и ждут моих приказов", GUILayout.Width(330))) buyForFaction = false;
-            if (GUILayout.Toggle(buyForFaction, " Фракции — ИИ сам решает, куда ехать", GUILayout.Width(290))) buyForFaction = true;
+            GUILayout.Label(L.T("Buy:", "Покупать:"), GUILayout.Width(70));
+            if (GUILayout.Toggle(!buyForFaction, L.T(" For me — they hold and wait for my orders", " Себе — стоят на месте и ждут моих приказов"), GUILayout.Width(330))) buyForFaction = false;
+            if (GUILayout.Toggle(buyForFaction, L.T(" For the faction — the AI decides where to go", " Фракции — ИИ сам решает, куда ехать"), GUILayout.Width(290))) buyForFaction = true;
             GUILayout.EndHorizontal();
-            DrawLimitRow("Лимит своих юнитов:", Plugin.MaxOwnUnits, purchased.Count);
-            DrawLimitRow("Лимит юнитов фракции:", Plugin.MaxFactionUnits, factionBought.Count);
+            DrawLimitRow(L.T("My unit limit:", "Лимит своих юнитов:"), Plugin.MaxOwnUnits, purchased.Count);
+            DrawLimitRow(L.T("Faction unit limit:", "Лимит юнитов фракции:"), Plugin.MaxFactionUnits, factionBought.Count);
 
             if (!GameApi.IsServer())
             {
-                GUILayout.Label("Мод работает только в одиночной игре (или если ты хост).", badStyle);
+                GUILayout.Label(L.T("The mod works only in single-player (or when you are the host).", "Мод работает только в одиночной игре (или если ты хост)."), badStyle);
             }
 
-            tab = GUILayout.Toolbar(tab, new[] { "Наземная", "Флот", "Оборона/склады", "Играбельная", $"Мои ({purchased.Count})", "Стратегемы" });
+            tab = GUILayout.Toolbar(tab, new[] { L.T("Ground", "Наземная"), L.T("Naval", "Флот"), L.T("Defences/depots", "Оборона/склады"), L.T("Playable", "Играбельная"), L.T($"Mine ({purchased.Count})", $"Мои ({purchased.Count})"), L.T("Stratagems", "Стратегемы") });
             if (tab != lastTabForFilter)
             {
                 groupFilter = 0;
@@ -1077,13 +1078,17 @@ namespace FieldCommand
             }
 
             GUILayout.Space(4);
-            GUILayout.Label($"Карта: выдели свои юниты → ПКМ — двигаться (Shift — маршрут), {Plugin.HoldKey.Value} — держать позицию, {Plugin.AttackKey.Value} — огонь по цели/ракете под курсором (с места; Shift+{Plugin.AttackKey.Value} — выдвинуться; {Plugin.AttackKey.Value} по пустому месту — сбросить), {Plugin.MissileDefenseKey.Value} — авто-перехват ракет.");
+            GUILayout.Label(L.T($"Map: select your units → RMB — move (Shift — waypoints), {Plugin.HoldKey.Value} — hold position, {Plugin.AttackKey.Value} — fire at the target/missile under the cursor (from place; Shift+{Plugin.AttackKey.Value} — advance; {Plugin.AttackKey.Value} on empty ground — clear), {Plugin.MissileDefenseKey.Value} — automatic missile defence, {Plugin.ScrapKey.Value} — scrap.", $"Карта: выдели свои юниты → ПКМ — двигаться (Shift — маршрут), {Plugin.HoldKey.Value} — держать позицию, {Plugin.AttackKey.Value} — огонь по цели/ракете под курсором (с места; Shift+{Plugin.AttackKey.Value} — выдвинуться; {Plugin.AttackKey.Value} по пустому месту — сбросить), {Plugin.MissileDefenseKey.Value} — авто-перехват ракет, {Plugin.ScrapKey.Value} — списать."));
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Обновить список"))
+            if (GUILayout.Button(L.T("Refresh list", "Обновить список")))
             {
                 RebuildCatalog();
             }
-            if (GUILayout.Button("Закрыть (" + Plugin.MenuKey.Value + ")"))
+            if (GUILayout.Button(L.Ru ? "Language: English" : "Язык: русский", GUILayout.Width(150)))
+            {
+                L.Language.Value = L.Ru ? UiLanguage.English : UiLanguage.Russian;
+            }
+            if (GUILayout.Button(L.T("Close (", "Закрыть (") + Plugin.MenuKey.Value + ")"))
             {
                 menuOpen = false;
             }
@@ -1114,22 +1119,22 @@ namespace FieldCommand
             var groups = catalog.Where(e => InTab(e, t) && Visible(e)).Select(e => e.GroupName).Distinct().ToList();
             if (t == 3 && groups.Count == 0)
             {
-                GUILayout.Label("Не найдено техники, за которую можно играть (нужны моды KAR или BOTE).");
+                GUILayout.Label(L.T("No playable vehicles found (the KAR or BOTE mods are needed).", "Не найдено техники, за которую можно играть (нужны моды KAR или BOTE)."));
             }
             if (t != 3 && groups.Count > 1)
             {
-                var labels = new List<string> { "Все" };
+                var labels = new List<string> { L.T("All", "Все") };
                 labels.AddRange(groups);
                 groupFilter = Mathf.Clamp(groupFilter, 0, labels.Count - 1);
                 groupFilter = GUILayout.SelectionGrid(groupFilter, labels.ToArray(), 3);
             }
             if (t == 3)
             {
-                GUILayout.Label("Выбираешь модули, покупаешь — и сразу появляешься в технике (нужно не сидеть в другой).", okStyle);
+                GUILayout.Label(L.T("Pick modules, buy — and you appear inside right away (you must not be in another vehicle).", "Выбираешь модули, покупаешь — и сразу появляешься в технике (нужно не сидеть в другой)."), okStyle);
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Поиск:", GUILayout.Width(50));
+            GUILayout.Label(L.T("Search:", "Поиск:"), GUILayout.Width(50));
             search = GUILayout.TextField(search ?? "");
             GUILayout.EndHorizontal();
 
@@ -1156,22 +1161,22 @@ namespace FieldCommand
                 GUILayout.BeginHorizontal(GUI.skin.box);
                 string tag = e.FactionTag == "?" ? "" : "  <" + e.FactionTag + ">";
                 GUILayout.Label($"{e.Name}{(string.IsNullOrEmpty(e.TypeName) ? "" : "  [" + e.TypeName + "]")}{tag}", e.AllowedForMe ? GUI.skin.label : badStyle, GUILayout.Width(300));
-                GUILayout.Label(e.AllowedForMe ? GameApi.Money(e.Price) : "чужая", afford && e.AllowedForMe ? okStyle : badStyle, GUILayout.Width(80));
+                GUILayout.Label(e.AllowedForMe ? GameApi.Money(e.Price) : L.T("foreign", "чужая"), afford && e.AllowedForMe ? okStyle : badStyle, GUILayout.Width(80));
                 GUI.enabled = canBuy;
                 if (e.Playable)
                 {
-                    if (GUILayout.Button("Модули и покупка", GUILayout.Width(164)))
+                    if (GUILayout.Button(L.T("Modules & buy", "Модули и покупка"), GUILayout.Width(164)))
                     {
                         OpenLoadout(e);
                     }
                 }
                 else
                 {
-                    if (GUILayout.Button("На карте", GUILayout.Width(80)))
+                    if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(80)))
                     {
                         BeginPlacement(e, PlaceMode.Map);
                     }
-                    if (GUILayout.Button("Камерой", GUILayout.Width(80)))
+                    if (GUILayout.Button(L.T("Camera", "Камерой"), GUILayout.Width(80)))
                     {
                         BeginPlacement(e, PlaceMode.Camera);
                     }
@@ -1201,7 +1206,7 @@ namespace FieldCommand
             catch (Exception ex)
             {
                 Plugin.Log.LogError("Loadout window failed: " + ex);
-                Toast("Не удалось открыть модули: " + ex.Message);
+                Toast(L.T("Couldn't open modules: ", "Не удалось открыть модули: ") + ex.Message);
                 draft = null;
             }
         }
@@ -1216,12 +1221,12 @@ namespace FieldCommand
             float total = draftEntry.Price + extra;
             float funds = GameApi.GetFunds();
             GUILayout.Label(draftEntry.Name, headerStyle);
-            GUILayout.Label($"Техника: {GameApi.Money(draftEntry.Price)}   Модули: {GameApi.Money(extra)}   Итого: {GameApi.Money(total)}", funds >= total ? okStyle : badStyle);
+            GUILayout.Label(L.T($"Vehicle: {GameApi.Money(draftEntry.Price)}   Modules: {GameApi.Money(extra)}   Total: {GameApi.Money(total)}", $"Техника: {GameApi.Money(draftEntry.Price)}   Модули: {GameApi.Money(extra)}   Итого: {GameApi.Money(total)}"), funds >= total ? okStyle : badStyle);
 
             loadoutScroll = GUILayout.BeginScrollView(loadoutScroll, GUILayout.ExpandHeight(true));
             if (draft.Sets.Length == 0)
             {
-                GUILayout.Label("У этой техники нет слотов вооружения.");
+                GUILayout.Label(L.T("This vehicle has no weapon slots.", "У этой техники нет слотов вооружения."));
             }
             for (int i = 0; i < draft.Sets.Length; i++)
             {
@@ -1238,19 +1243,19 @@ namespace FieldCommand
             }
             GUILayout.EndScrollView();
 
-            GUILayout.Label("После покупки ты сразу появишься в этой технике (нужно не сидеть в другой).", okStyle);
+            GUILayout.Label(L.T("After buying you appear in this vehicle right away (you must not be in another one).", "После покупки ты сразу появишься в этой технике (нужно не сидеть в другой)."), okStyle);
             GUILayout.BeginHorizontal();
             GUI.enabled = funds >= total && draftEntry.AllowedForMe;
-            if (GUILayout.Button("Поставить на карте"))
+            if (GUILayout.Button(L.T("Place on map", "Поставить на карте")))
             {
                 StartPlayablePlacement(PlaceMode.Map);
             }
-            if (GUILayout.Button("Поставить камерой"))
+            if (GUILayout.Button(L.T("Place with camera", "Поставить камерой")))
             {
                 StartPlayablePlacement(PlaceMode.Camera);
             }
             GUI.enabled = true;
-            if (GUILayout.Button("Закрыть", GUILayout.Width(80)))
+            if (GUILayout.Button(L.T("Close", "Закрыть"), GUILayout.Width(80)))
             {
                 draft = null;
             }
@@ -1273,9 +1278,9 @@ namespace FieldCommand
             if (mine != null && Crew.IsPlayable(mine))
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Сейчас ты в: " + (mine.definition?.unitName ?? mine.name), okStyle);
+                GUILayout.Label(L.T("You are in: ", "Сейчас ты в: ") + (mine.definition?.unitName ?? mine.name), okStyle);
                 GUI.enabled = !crew.Busy;
-                if (GUILayout.Button("Выйти (техника останется)", GUILayout.Width(210)))
+                if (GUILayout.Button(L.T("Get out (vehicle stays)", "Выйти (техника останется)"), GUILayout.Width(210)))
                 {
                     menuOpen = false;
                     crew.Leave();
@@ -1285,12 +1290,12 @@ namespace FieldCommand
             }
             if (crew.Busy)
             {
-                GUILayout.Label("Идёт пересадка…", okStyle);
+                GUILayout.Label(L.T("Switching vehicles…", "Идёт пересадка…"), okStyle);
             }
             ownedScroll = GUILayout.BeginScrollView(ownedScroll, GUILayout.ExpandHeight(true));
             if (purchased.Count == 0)
             {
-                GUILayout.Label("Пока ничего не куплено.");
+                GUILayout.Label(L.T("Nothing bought yet.", "Пока ничего не куплено."));
             }
             foreach (var u in purchased.ToList())
             {
@@ -1299,16 +1304,16 @@ namespace FieldCommand
                 if (u is Aircraft a)
                 {
                     bool inside = a == mine;
-                    string st = inside ? "ты внутри" : a.Player != null ? "занята" : "без экипажа";
+                    string st = inside ? L.T("you are inside", "ты внутри") : a.Player != null ? L.T("occupied", "занята") : L.T("no crew", "без экипажа");
                     GUILayout.Label($"{u.definition?.unitName ?? u.name}  ({st})", GUILayout.Width(300));
                     GUI.enabled = !inside && a.Player == null && !crew.Busy;
-                    if (GUILayout.Button("Сесть", GUILayout.Width(80)))
+                    if (GUILayout.Button(L.T("Get in", "Сесть"), GUILayout.Width(80)))
                     {
                         menuOpen = false;
                         crew.Enter(a);
                     }
                     GUI.enabled = true;
-                    if (GUILayout.Button("На карте", GUILayout.Width(80)))
+                    if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(80)))
                     {
                         ShowOnMap(u);
                     }
@@ -1320,50 +1325,50 @@ namespace FieldCommand
                 }
                 if (u is Building || u is Container)
                 {
-                    string st2 = "стационарный";
-                    if (FocusFire.Orders.TryGetValue(u, out var ft2) && ft2 != null && !ft2.disabled) st2 += ", цель: " + (ft2 is Missile ? "ракета" : (ft2.definition?.unitName ?? ft2.name));
+                    string st2 = L.T("static", "стационарный");
+                    if (FocusFire.Orders.TryGetValue(u, out var ft2) && ft2 != null && !ft2.disabled) st2 += L.T(", target: ", ", цель: ") + (ft2 is Missile ? L.T("missile", "ракета") : (ft2.definition?.unitName ?? ft2.name));
                     GUILayout.Label($"{u.definition?.unitName ?? u.name}  ({st2})", GUILayout.Width(300));
                     if (u.GetComponentInChildren<Turret>() != null)
                     {
                         bool pro2 = FocusFire.MissileDefense.Contains(u);
-                        if (GUILayout.Button(pro2 ? "ПРО: вкл" : "ПРО: выкл", GUILayout.Width(80)))
+                        if (GUILayout.Button(pro2 ? L.T("ABM: on", "ПРО: вкл") : L.T("ABM: off", "ПРО: выкл"), GUILayout.Width(80)))
                         {
                             if (pro2) FocusFire.MissileDefense.Remove(u);
                             else FocusFire.MissileDefense.Add(u);
                         }
                     }
-                    if (GUILayout.Button("На карте", GUILayout.Width(70))) ShowOnMap(u);
+                    if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(70))) ShowOnMap(u);
                     if (GUILayout.Button(ScrapLabel(u), GUILayout.Width(110))) Scrap(u, true);
                     GUILayout.EndHorizontal();
                     continue;
                 }
                 bool hold = GameApi.GetHold(u);
-                string state = hold ? "держит позицию" : "свободен";
+                string state = hold ? L.T("holding position", "держит позицию") : L.T("free", "свободен");
                 if (FocusFire.Orders.TryGetValue(u, out var ft) && ft != null && !ft.disabled)
                 {
-                    state += ", цель: " + (ft is Missile ? "ракета" : (ft.definition?.unitName ?? ft.name)) + (FocusFire.CanEngageNow(u, ft) ? " (огонь)" : " (вне досягаемости)");
+                    state += L.T(", target: ", ", цель: ") + (ft is Missile ? L.T("missile", "ракета") : (ft.definition?.unitName ?? ft.name)) + (FocusFire.CanEngageNow(u, ft) ? L.T(" (firing)", " (огонь)") : L.T(" (out of range)", " (вне досягаемости)"));
                 }
-                if (FocusFire.MissileDefense.Contains(u)) state += ", ПРО";
+                if (FocusFire.MissileDefense.Contains(u)) state += L.T(", ABM", ", ПРО");
                 GUILayout.Label($"{u.definition?.unitName ?? u.name}  ({state})", GUILayout.Width(300));
-                if (GUILayout.Button(hold ? "Отпустить" : "Держать", GUILayout.Width(80)))
+                if (GUILayout.Button(hold ? L.T("Release", "Отпустить") : L.T("Hold", "Держать"), GUILayout.Width(80)))
                 {
                     attackOrders.Remove(u);
                     GameApi.SetHold(u, !hold);
                     if (!hold) GameApi.Stop(u);
                 }
-                if (GUILayout.Button("Стоп", GUILayout.Width(55)))
+                if (GUILayout.Button(L.T("Stop", "Стоп"), GUILayout.Width(55)))
                 {
                     attackOrders.Remove(u);
                     FocusFire.Clear(u);
                     GameApi.Stop(u);
                 }
                 bool pro = FocusFire.MissileDefense.Contains(u);
-                if (GUILayout.Button(pro ? "ПРО: вкл" : "ПРО: выкл", GUILayout.Width(80)))
+                if (GUILayout.Button(pro ? L.T("ABM: on", "ПРО: вкл") : L.T("ABM: off", "ПРО: выкл"), GUILayout.Width(80)))
                 {
                     if (pro) FocusFire.MissileDefense.Remove(u);
                     else FocusFire.MissileDefense.Add(u);
                 }
-                if (GUILayout.Button("На карте", GUILayout.Width(70)))
+                if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(70)))
                 {
                     ShowOnMap(u);
                 }
@@ -1373,13 +1378,13 @@ namespace FieldCommand
             if (factionBought.Count > 0)
             {
                 GUILayout.Space(6);
-                GUILayout.Label($"— Куплено для фракции ({factionBought.Count}) — ими управляет ИИ —", headerStyle);
+                GUILayout.Label(L.T($"— Bought for the faction ({factionBought.Count}) — controlled by the AI —", $"— Куплено для фракции ({factionBought.Count}) — ими управляет ИИ —"), headerStyle);
                 foreach (var u in factionBought.ToList())
                 {
                     if (u == null) continue;
                     GUILayout.BeginHorizontal(GUI.skin.box);
                     GUILayout.Label(u.definition?.unitName ?? u.name, GUILayout.Width(300));
-                    if (GUILayout.Button("На карте", GUILayout.Width(70))) ShowOnMap(u);
+                    if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(70))) ShowOnMap(u);
                     if (GUILayout.Button(ScrapLabel(u), GUILayout.Width(110))) Scrap(u, true);
                     GUILayout.EndHorizontal();
                 }
@@ -1399,14 +1404,14 @@ namespace FieldCommand
             return price * Mathf.Clamp(Plugin.ScrapRefundPercent.Value, 0f, 100f) / 100f;
         }
 
-        private string ScrapLabel(Unit u) => "Списать +" + GameApi.Money(RefundFor(u));
+        private string ScrapLabel(Unit u) => L.T("Scrap +", "Списать +") + GameApi.Money(RefundFor(u));
 
         private void Scrap(Unit u, bool toast)
         {
             if (u == null || u.disabled) return;
             if (u is Aircraft && Crew.MyVehicle() == u)
             {
-                Toast("Сначала выйди из этой техники (" + Plugin.LeaveKey.Value + ")");
+                Toast(L.T("Get out of this vehicle first (", "Сначала выйди из этой техники (") + Plugin.LeaveKey.Value + ")");
                 return;
             }
             float refund = RefundFor(u);
@@ -1428,7 +1433,7 @@ namespace FieldCommand
                 Plugin.Log.LogWarning("Scrap: " + e.Message);
             }
             GameApi.Refund(refund);
-            if (toast) Toast($"Списано: {u.definition?.unitName ?? u.name}, возврат {GameApi.Money(refund)}");
+            if (toast) Toast(L.T($"Scrapped: {u.definition?.unitName ?? u.name}, refund {GameApi.Money(refund)}", $"Списано: {u.definition?.unitName ?? u.name}, возврат {GameApi.Money(refund)}"));
         }
 
         private static IEnumerator DestroyLater(Unit u, float delay)
@@ -1444,16 +1449,16 @@ namespace FieldCommand
         private void DrawStratagems()
         {
             float funds = GameApi.GetFunds();
-            GUILayout.Label($"Вызов поддержки: выбери стратегему → укажи цель на карте (ЛКМ) или камерой ({Plugin.CameraPlaceKey.Value}). Удар через {Stratagems.Delay.Value:0} с после вызова.");
+            GUILayout.Label(L.T($"Call in support: pick a stratagem → mark the target on the map (LMB) or with the camera ({Plugin.CameraPlaceKey.Value}). The strike lands {Stratagems.Delay.Value:0} s after the call.", $"Вызов поддержки: выбери стратегему → укажи цель на карте (ЛКМ) или камерой ({Plugin.CameraPlaceKey.Value}). Удар через {Stratagems.Delay.Value:0} с после вызова."));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Высота появления снарядов над землёй:", GUILayout.Width(270));
+            GUILayout.Label(L.T("Projectile spawn height above ground:", "Высота появления снарядов над землёй:"), GUILayout.Width(270));
             Stratagems.SpawnHeight.Value = Mathf.Round(GUILayout.HorizontalSlider(Stratagems.SpawnHeight.Value, 100f, 8000f, GUILayout.Width(220)) / 50f) * 50f;
-            GUILayout.Label($"{Stratagems.SpawnHeight.Value:0} м", GUILayout.Width(70));
+            GUILayout.Label(L.T($"{Stratagems.SpawnHeight.Value:0} m", $"{Stratagems.SpawnHeight.Value:0} м"), GUILayout.Width(70));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.Label("…но не ниже над уровнем моря (выше гор):", GUILayout.Width(270));
+            GUILayout.Label(L.T("…but not lower above sea level (above mountains):", "…но не ниже над уровнем моря (выше гор):"), GUILayout.Width(270));
             Stratagems.MinAltitude.Value = Mathf.Round(GUILayout.HorizontalSlider(Stratagems.MinAltitude.Value, 0f, 10000f, GUILayout.Width(220)) / 100f) * 100f;
-            GUILayout.Label($"{Stratagems.MinAltitude.Value:0} м", GUILayout.Width(70));
+            GUILayout.Label(L.T($"{Stratagems.MinAltitude.Value:0} m", $"{Stratagems.MinAltitude.Value:0} м"), GUILayout.Width(70));
             GUILayout.EndHorizontal();
             stratScroll = GUILayout.BeginScrollView(stratScroll, GUILayout.ExpandHeight(true));
             foreach (var s in Stratagems.All)
@@ -1464,35 +1469,35 @@ namespace FieldCommand
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(s.Name, headerStyle, GUILayout.Width(300));
                 GUILayout.Label(GameApi.Money(price), funds >= price ? okStyle : badStyle, GUILayout.Width(90));
-                GUILayout.Label(cd > 0f ? $"перезарядка {cd:0} с" : "готово", cd > 0f ? badStyle : okStyle, GUILayout.Width(150));
+                GUILayout.Label(cd > 0f ? L.T($"cooldown {cd:0} s", $"перезарядка {cd:0} с") : L.T("ready", "готово"), cd > 0f ? badStyle : okStyle, GUILayout.Width(150));
                 GUILayout.EndHorizontal();
                 GUILayout.Label(s.Description);
                 if (s.HasArea)
                 {
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Toggle(s.Point, " Точечно", GUILayout.Width(100))) s.Point = true;
-                    if (GUILayout.Toggle(!s.Point, " По области, радиус:", GUILayout.Width(160))) s.Point = false;
+                    if (GUILayout.Toggle(s.Point, L.T(" Point", " Точечно"), GUILayout.Width(100))) s.Point = true;
+                    if (GUILayout.Toggle(!s.Point, L.T(" Area, radius:", " По области, радиус:"), GUILayout.Width(160))) s.Point = false;
                     GUI.enabled = !s.Point;
                     s.Radius = GUILayout.HorizontalSlider(s.Radius, Stratagems.MinRadius, Stratagems.MaxRadius, GUILayout.Width(220));
-                    GUILayout.Label($"{s.Radius:0} м", GUILayout.Width(70));
+                    GUILayout.Label(L.T($"{s.Radius:0} m", $"{s.Radius:0} м"), GUILayout.Width(70));
                     GUI.enabled = true;
                     GUILayout.EndHorizontal();
                 }
                 if (s.HasVolume)
                 {
-                    string what = s.Kind == StratagemKind.Carpet ? "Бомб" : s.Kind == StratagemKind.MissileStrike ? "Ракет" : "Снарядов";
+                    string what = s.Kind == StratagemKind.Carpet ? L.T("Bombs", "Бомб") : s.Kind == StratagemKind.MissileStrike ? L.T("Missiles", "Ракет") : L.T("Shells", "Снарядов");
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label(what + " в залпе:", GUILayout.Width(120));
+                    GUILayout.Label(what + L.T(" per salvo:", " в залпе:"), GUILayout.Width(120));
                     if (GUILayout.Button("−", GUILayout.Width(26))) s.Shells.Value = Mathf.Max(s.MinShells, s.ShellCount - 1);
                     GUILayout.Label(s.ShellCount.ToString(), GUILayout.Width(30));
                     if (GUILayout.Button("+", GUILayout.Width(26))) s.Shells.Value = Mathf.Min(s.MaxShells, s.ShellCount + 1);
                     GUILayout.Space(20);
-                    GUILayout.Label("Залпов:", GUILayout.Width(60));
+                    GUILayout.Label(L.T("Salvos:", "Залпов:"), GUILayout.Width(60));
                     if (GUILayout.Button("−", GUILayout.Width(26))) s.Salvos.Value = Mathf.Max(1, s.SalvoCount - 1);
                     GUILayout.Label(s.SalvoCount.ToString(), GUILayout.Width(30));
                     if (GUILayout.Button("+", GUILayout.Width(26))) s.Salvos.Value = Mathf.Min(Stratagem.MaxSalvos, s.SalvoCount + 1);
                     GUILayout.Space(20);
-                    GUILayout.Label($"всего {s.ShellCount * s.SalvoCount}, интервал {Stratagems.SalvoInterval.Value:0} с", GUILayout.Width(200));
+                    GUILayout.Label(L.T($"total {s.ShellCount * s.SalvoCount}, every {Stratagems.SalvoInterval.Value:0} s", $"всего {s.ShellCount * s.SalvoCount}, интервал {Stratagems.SalvoInterval.Value:0} с"), GUILayout.Width(200));
                     GUILayout.EndHorizontal();
                 }
                 if (s.Kind == StratagemKind.Airdrop)
@@ -1504,20 +1509,20 @@ namespace FieldCommand
                     var m = Stratagems.MunitionFor(s);
                     var cands = Stratagems.Candidates(s);
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Боеприпас:", GUILayout.Width(80));
+                    GUILayout.Label(L.T("Munition:", "Боеприпас:"), GUILayout.Width(80));
                     int mi = m != null ? cands.IndexOf(m) : -1;
                     if (cands.Count > 0 && GUILayout.Button("◄", GUILayout.Width(28)))
                     {
                         var pick = cands[(mi - 1 + cands.Count) % cands.Count];
                         s.Munition.Value = FactionResolver.KeyOf(pick);
                     }
-                    GUILayout.Label(m != null ? (m.unitName ?? m.name) : "не найден в игре", m != null ? GUI.skin.label : badStyle, GUILayout.Width(300));
+                    GUILayout.Label(m != null ? (m.unitName ?? m.name) : L.T("not found in the game", "не найден в игре"), m != null ? GUI.skin.label : badStyle, GUILayout.Width(300));
                     if (cands.Count > 0 && GUILayout.Button("►", GUILayout.Width(28)))
                     {
                         var pick = cands[(mi + 1) % cands.Count];
                         s.Munition.Value = FactionResolver.KeyOf(pick);
                     }
-                    if (!string.IsNullOrEmpty(s.Munition.Value) && GUILayout.Button("авто", GUILayout.Width(50)))
+                    if (!string.IsNullOrEmpty(s.Munition.Value) && GUILayout.Button(L.T("auto", "авто"), GUILayout.Width(50)))
                     {
                         s.Munition.Value = "";
                     }
@@ -1525,8 +1530,8 @@ namespace FieldCommand
                 }
                 GUILayout.BeginHorizontal();
                 GUI.enabled = cd <= 0f && funds >= price && (s.Kind != StratagemKind.Airdrop || s.DropUnit != null);
-                if (GUILayout.Button("Цель на карте", GUILayout.Width(140))) BeginStrike(s, PlaceMode.Map);
-                if (GUILayout.Button("Цель камерой", GUILayout.Width(140))) BeginStrike(s, PlaceMode.Camera);
+                if (GUILayout.Button(L.T("Target on map", "Цель на карте"), GUILayout.Width(140))) BeginStrike(s, PlaceMode.Map);
+                if (GUILayout.Button(L.T("Target with camera", "Цель камерой"), GUILayout.Width(140))) BeginStrike(s, PlaceMode.Camera);
                 GUI.enabled = true;
                 GUILayout.EndHorizontal();
                 GUILayout.EndVertical();
@@ -1539,7 +1544,7 @@ namespace FieldCommand
             var options = catalog == null ? new List<CatalogEntry>() : catalog.Where(e => !e.Playable && !e.Static && e.Definition is VehicleDefinition && e.AllowedForMe).ToList();
             if (options.Count == 0)
             {
-                GUILayout.Label("Нет доступной наземной техники", badStyle);
+                GUILayout.Label(L.T("No ground vehicles available", "Нет доступной наземной техники"), badStyle);
                 return;
             }
             int idx = s.DropUnit == null ? -1 : options.IndexOf(s.DropUnit);
@@ -1563,7 +1568,7 @@ namespace FieldCommand
         {
             if (s.Kind == StratagemKind.Airdrop && Plugin.MaxOwnUnits.Value > 0 && purchased.Count + s.DropCount > Plugin.MaxOwnUnits.Value)
             {
-                Toast("Десант превысит лимит своих юнитов");
+                Toast(L.T("The airdrop would exceed your unit limit", "Десант превысит лимит своих юнитов"));
                 return;
             }
             var dummy = new CatalogEntry
@@ -1576,7 +1581,7 @@ namespace FieldCommand
             };
             BeginPlacement(dummy, m);
             strike = s;
-            Toast(m == PlaceMode.Map ? $"{s.Name}: ЛКМ по цели, {Plugin.RotateKey.Value} — направление, {Plugin.CancelKey.Value} — отмена" : $"{s.Name}: наведи прицел, {Plugin.CameraPlaceKey.Value} — вызвать", 5f);
+            Toast(m == PlaceMode.Map ? L.T($"{s.Name}: LMB on the target, {Plugin.RotateKey.Value} — direction, {Plugin.CancelKey.Value} — cancel", $"{s.Name}: ЛКМ по цели, {Plugin.RotateKey.Value} — направление, {Plugin.CancelKey.Value} — отмена") : L.T($"{s.Name}: aim, {Plugin.CameraPlaceKey.Value} — call in", $"{s.Name}: наведи прицел, {Plugin.CameraPlaceKey.Value} — вызвать"), 5f);
         }
 
         private void ShowOnMap(Unit u)

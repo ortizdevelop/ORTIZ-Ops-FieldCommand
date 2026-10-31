@@ -60,8 +60,8 @@ namespace FieldCommand
         {
             if (pendingKills > 0 && Time.unscaledTime >= flushAt)
             {
-                string what = pendingKills == 1 ? lastName : $"{pendingKills} целей";
-                Toast?.Invoke($"+{GameApi.Money(pendingMoney)} — твои юниты уничтожили: {what}");
+                string what = pendingKills == 1 ? lastName : L.T($"{pendingKills} targets", $"{pendingKills} целей");
+                Toast?.Invoke(L.T($"+{GameApi.Money(pendingMoney)} — your units destroyed: {what}", $"+{GameApi.Money(pendingMoney)} — твои юниты уничтожили: {what}"));
                 pendingKills = 0;
                 pendingMoney = 0f;
             }
@@ -119,7 +119,7 @@ namespace FieldCommand
             SessionTotal += money;
             pendingMoney += money;
             pendingKills++;
-            lastName = victim is Missile ? "ракета" : (victim.definition.unitName ?? victim.name);
+            lastName = victim is Missile ? L.T("missile", "ракета") : (victim.definition.unitName ?? victim.name);
             flushAt = Time.unscaledTime + 1.5f;
             Plugin.Log.LogInfo($"[Reward] {lastName}: share {factor:P0}, +{money:0.00}M");
         }

@@ -22,8 +22,9 @@ namespace FieldCommand
     internal class Stratagem
     {
         public StratagemKind Kind;
-        public string Name;
-        public string Description;
+        public string NameEn, NameRu, DescEn, DescRu;
+        public string Name => L.T(NameEn, NameRu);
+        public string Description => L.T(DescEn, DescRu);
         public ConfigEntry<float> Price;
         public ConfigEntry<float> Cooldown;
         public ConfigEntry<string> Munition; // jsonKey / name override, empty = automatic
@@ -89,34 +90,66 @@ namespace FieldCommand
 
         public static void Bind(ConfigFile cfg)
         {
-            const string sec = "7. Стратегемы";
-            Delay = cfg.Bind(sec, "Задержка удара, сек", 5f, "Сколько секунд проходит от вызова до удара (время подлёта)");
-            AirdropMarkup = cfg.Bind(sec, "Десант: наценка", 1.3f, "Цена десанта = цена юнитов × количество × наценка");
-            AirdropHeight = cfg.Bind(sec, "Десант: высота сброса, м", 150f, "С какой высоты техника плавно опускается на землю (0 — появляется сразу на земле)");
-            SpawnHeight = cfg.Bind(sec, "Высота появления снарядов над землёй, м", 800f, new ConfigDescription("На какой высоте над точкой удара появляются снаряды и бомбы. Меньше — точнее и быстрее долетают", new AcceptableValueRange<float>(100f, 8000f)));
-            MinAltitude = cfg.Bind(sec, "Высота появления не ниже, м над морем", 3500f, new ConfigDescription("Снаряды никогда не появляются ниже этой высоты над уровнем моря — защита от появления внутри гор, если рельеф в точке удара не прогружен. Поставь выше самых высоких гор карты", new AcceptableValueRange<float>(0f, 10000f)));
-            DropSpeed = cfg.Bind(sec, "Скорость падения снарядов, м/с", 300f, "С какой начальной скоростью снаряды летят вниз");
-            RewardPercent = cfg.Bind(sec, "Награда за уничтожения стратегемой, %", 15f, new ConfigDescription("Какой % от награды пилота-игрока ты получаешь за врагов, уничтоженных твоими стратегемами (0 — выключить)", new AcceptableValueRange<float>(0f, 100f)));
-            ArtilleryShells = cfg.Bind(sec, "Артудар: снарядов", 12, new ConfigDescription("Сколько снарядов в одном залпе артудара (меняется и в меню стратегем). Цена растёт пропорционально", new AcceptableValueRange<int>(1, 60)));
-            SalvoInterval = cfg.Bind(sec, "Интервал между залпами, сек", 4f, new ConfigDescription("Пауза между залпами, если залпов больше одного", new AcceptableValueRange<float>(1f, 30f)));
+            const string sec = "7. Stratagems", rs = "7. Стратегемы";
+            Delay = L.Bind(cfg, sec, rs, "Strike delay, s", "Задержка удара, сек", 5f,
+                "Seconds from the call to the strike (flight time)", "Сколько секунд проходит от вызова до удара (время подлёта)");
+            AirdropMarkup = L.Bind(cfg, sec, rs, "Airdrop: markup", "Десант: наценка", 1.3f,
+                "Airdrop price = unit price × count × markup", "Цена десанта = цена юнитов × количество × наценка");
+            AirdropHeight = L.Bind(cfg, sec, rs, "Airdrop: drop height, m", "Десант: высота сброса, м", 150f,
+                "Height from which vehicles descend to the ground (0 — they appear on the ground right away)",
+                "С какой высоты техника плавно опускается на землю (0 — появляется сразу на земле)");
+            SpawnHeight = L.Bind(cfg, sec, rs, "Projectile spawn height above ground, m", "Высота появления снарядов над землёй, м", 800f,
+                "How high above the target shells and bombs appear. Lower — more accurate and faster to arrive",
+                "На какой высоте над точкой удара появляются снаряды и бомбы. Меньше — точнее и быстрее долетают",
+                new AcceptableValueRange<float>(100f, 8000f));
+            MinAltitude = L.Bind(cfg, sec, rs, "Spawn no lower than, m above sea", "Высота появления не ниже, м над морем", 3500f,
+                "Projectiles never appear below this height above sea level — protects against spawning inside mountains when the terrain at the target isn't loaded. Set it above the highest mountains of the map",
+                "Снаряды никогда не появляются ниже этой высоты над уровнем моря — защита от появления внутри гор, если рельеф в точке удара не прогружен. Поставь выше самых высоких гор карты",
+                new AcceptableValueRange<float>(0f, 10000f));
+            DropSpeed = L.Bind(cfg, sec, rs, "Projectile fall speed, m/s", "Скорость падения снарядов, м/с", 300f,
+                "Initial downward speed of the projectiles", "С какой начальной скоростью снаряды летят вниз");
+            RewardPercent = L.Bind(cfg, sec, rs, "Stratagem kill reward, %", "Награда за уничтожения стратегемой, %", 15f,
+                "% of a pilot's reward you get for enemies destroyed by your stratagems (0 — off)",
+                "Какой % от награды пилота-игрока ты получаешь за врагов, уничтоженных твоими стратегемами (0 — выключить)",
+                new AcceptableValueRange<float>(0f, 100f));
+            ArtilleryShells = L.Bind(cfg, sec, rs, "Artillery: shells", "Артудар: снарядов", 12,
+                "Shells in one artillery salvo (also adjustable in the stratagem menu). The price grows proportionally",
+                "Сколько снарядов в одном залпе артудара (меняется и в меню стратегем). Цена растёт пропорционально",
+                new AcceptableValueRange<int>(1, 60));
+            SalvoInterval = L.Bind(cfg, sec, rs, "Interval between salvos, s", "Интервал между залпами, сек", 4f,
+                "Pause between salvos when there is more than one", "Пауза между залпами, если залпов больше одного",
+                new AcceptableValueRange<float>(1f, 30f));
 
             All.Clear();
-            All.Add(Make(cfg, sec, StratagemKind.Artillery, "Артудар", "Серия снарядов: точечно или по выбранному кругу. Количество снарядов и залпов настраивается", 15f, 60f));
-            All.Add(Make(cfg, sec, StratagemKind.Carpet, "Ковровая бомбардировка", "Бомбы полосой: точечно (~200 м) или длиной в диаметр круга, по направлению стрелки (R — повернуть). Количество бомб и залпов настраивается", 35f, 120f));
-            All.Add(Make(cfg, sec, StratagemKind.MissileStrike, "Ракетный удар", "Ракеты отвесно: точечно — все в ближайшего видимого врага; по области — по видимым врагам в круге. Количество ракет и залпов настраивается", 40f, 90f));
-            All.Add(Make(cfg, sec, StratagemKind.TacticalNuke, "Тактический ядерный удар", "1 тактический ядерный заряд", 250f, 300f));
-            All.Add(Make(cfg, sec, StratagemKind.StrategicNuke, "Стратегический ядерный удар", "1 стратегический ядерный заряд", 800f, 900f));
-            All.Add(Make(cfg, sec, StratagemKind.Airdrop, "Десант", "Сброс выбранной наземной техники с неба — куда угодно на сушу, даже в тыл врага", 0f, 90f));
+            All.Add(Make(cfg, sec, rs, StratagemKind.Artillery, "Artillery", "Артудар",
+                "A barrage of shells: on a point or over the chosen circle. Shells and salvos are adjustable",
+                "Серия снарядов: точечно или по выбранному кругу. Количество снарядов и залпов настраивается", 15f, 60f));
+            All.Add(Make(cfg, sec, rs, StratagemKind.Carpet, "Carpet bombing", "Ковровая бомбардировка",
+                "Bombs in a line: ~200 m in point mode or the circle's diameter, along the arrow (R — rotate). Bombs and salvos are adjustable",
+                "Бомбы полосой: точечно (~200 м) или длиной в диаметр круга, по направлению стрелки (R — повернуть). Количество бомб и залпов настраивается", 35f, 120f));
+            All.Add(Make(cfg, sec, rs, StratagemKind.MissileStrike, "Missile strike", "Ракетный удар",
+                "Missiles diving vertically: point — all into the nearest visible enemy; area — into visible enemies in the circle. Missiles and salvos are adjustable",
+                "Ракеты отвесно: точечно — все в ближайшего видимого врага; по области — по видимым врагам в круге. Количество ракет и залпов настраивается", 40f, 90f));
+            All.Add(Make(cfg, sec, rs, StratagemKind.TacticalNuke, "Tactical nuclear strike", "Тактический ядерный удар",
+                "1 tactical nuclear warhead", "1 тактический ядерный заряд", 250f, 300f));
+            All.Add(Make(cfg, sec, rs, StratagemKind.StrategicNuke, "Strategic nuclear strike", "Стратегический ядерный удар",
+                "1 strategic nuclear warhead", "1 стратегический ядерный заряд", 800f, 900f));
+            All.Add(Make(cfg, sec, rs, StratagemKind.Airdrop, "Airdrop", "Десант",
+                "Drop the chosen ground vehicles from the sky — anywhere on land, even behind enemy lines",
+                "Сброс выбранной наземной техники с неба — куда угодно на сушу, даже в тыл врага", 0f, 90f));
         }
 
-        private static Stratagem Make(ConfigFile cfg, string sec, StratagemKind k, string name, string desc, float price, float cooldown)
+        private static Stratagem Make(ConfigFile cfg, string sec, string rs, StratagemKind k, string nameEn, string nameRu, string descEn, string descRu, float price, float cooldown)
         {
-            var s = new Stratagem { Kind = k, Name = name, Description = desc };
-            s.Price = cfg.Bind(sec, name + ": цена, млн", price, "Цена вызова");
-            s.Cooldown = cfg.Bind(sec, name + ": перезарядка, сек", cooldown, "Через сколько секунд можно вызвать снова");
+            var s = new Stratagem { Kind = k, NameEn = nameEn, NameRu = nameRu, DescEn = descEn, DescRu = descRu };
+            s.Price = L.Bind(cfg, sec, rs, nameEn + ": price, M", nameRu + ": цена, млн", price, "Call-in price", "Цена вызова");
+            s.Cooldown = L.Bind(cfg, sec, rs, nameEn + ": cooldown, s", nameRu + ": перезарядка, сек", cooldown,
+                "Seconds before it can be called again", "Через сколько секунд можно вызвать снова");
             if (k != StratagemKind.Airdrop)
             {
-                s.Munition = cfg.Bind(sec, name + ": боеприпас", "", "Ключ или название боеприпаса из игры (пусто — выбрать автоматически). Ключи пишутся в лог при входе в миссию");
+                s.Munition = L.Bind(cfg, sec, rs, nameEn + ": munition", nameRu + ": боеприпас", "",
+                    "Key or name of the game's munition (empty — choose automatically). Keys are written to the log when a mission starts",
+                    "Ключ или название боеприпаса из игры (пусто — выбрать автоматически). Ключи пишутся в лог при входе в миссию");
             }
             if (k == StratagemKind.Artillery)
             {
@@ -124,12 +157,19 @@ namespace FieldCommand
             }
             else if (k == StratagemKind.Carpet || k == StratagemKind.MissileStrike)
             {
-                string what = k == StratagemKind.Carpet ? "бомб" : "ракет";
-                s.Shells = cfg.Bind(sec, name + ": " + what + " в залпе", s.BaseShells, new ConfigDescription("Сколько " + what + " в одном залпе (меняется и в меню стратегем). Цена растёт пропорционально", new AcceptableValueRange<int>(s.MinShells, s.MaxShells)));
+                string whatEn = k == StratagemKind.Carpet ? "bombs" : "missiles";
+                string whatRu = k == StratagemKind.Carpet ? "бомб" : "ракет";
+                s.Shells = L.Bind(cfg, sec, rs, nameEn + ": " + whatEn + " per salvo", nameRu + ": " + whatRu + " в залпе", s.BaseShells,
+                    "How many " + whatEn + " in one salvo (also adjustable in the stratagem menu). The price grows proportionally",
+                    "Сколько " + whatRu + " в одном залпе (меняется и в меню стратегем). Цена растёт пропорционально",
+                    new AcceptableValueRange<int>(s.MinShells, s.MaxShells));
             }
             if (s.Shells != null)
             {
-                s.Salvos = cfg.Bind(sec, name + ": залпов", 1, new ConfigDescription("Сколько залпов подряд (меняется и в меню стратегем). Цена умножается на число залпов", new AcceptableValueRange<int>(1, Stratagem.MaxSalvos)));
+                s.Salvos = L.Bind(cfg, sec, rs, nameEn + ": salvos", nameRu + ": залпов", 1,
+                    "How many salvos in a row (also adjustable in the stratagem menu). The price is multiplied by the number of salvos",
+                    "Сколько залпов подряд (меняется и в меню стратегем). Цена умножается на число залпов",
+                    new AcceptableValueRange<int>(1, Stratagem.MaxSalvos));
             }
             return s;
         }
@@ -255,9 +295,9 @@ namespace FieldCommand
         public static GameApi.Placement Validate(Stratagem s, GlobalPosition cursor, float heading)
         {
             var p = new GameApi.Placement { Rotation = Quaternion.Euler(0f, heading, 0f) };
-            if (!GameApi.IsServer()) { p.Reason = "Только одиночная игра / хост"; return p; }
-            if (s.CooldownLeft > 0f) { p.Reason = $"Перезарядка {s.CooldownLeft:0} с"; return p; }
-            if (GameApi.GetFunds() < s.CurrentPrice()) { p.Reason = "Недостаточно денег"; return p; }
+            if (!GameApi.IsServer()) { p.Reason = L.T("Single-player / host only", "Только одиночная игра / хост"); return p; }
+            if (s.CooldownLeft > 0f) { p.Reason = L.T($"Cooldown {s.CooldownLeft:0} s", $"Перезарядка {s.CooldownLeft:0} с"); return p; }
+            if (GameApi.GetFunds() < s.CurrentPrice()) { p.Reason = L.T("Not enough money", "Недостаточно денег"); return p; }
             Vector3 local = cursor.ToLocalPosition();
             bool known = TryGroundY(local, out float gy);
             bool land = known && gy >= Datum.LocalSeaY + 0.3f;
@@ -265,19 +305,19 @@ namespace FieldCommand
             p.Position = local.ToGlobalPosition();
             if (s.Kind == StratagemKind.Airdrop)
             {
-                if (s.DropUnit == null) { p.Reason = "Выбери технику для десанта"; return p; }
-                if (!s.DropUnit.AllowedForMe) { p.Reason = "Техника другой фракции"; return p; }
-                if (!known) { p.Reason = "Рельеф здесь не прогружен — подлети камерой ближе"; return p; }
-                if (!land) { p.Reason = "Десант — только на сушу"; return p; }
-                if (PathfindingAgent.RaycastTerrain(local, out var hit) && Vector3.Angle(hit.normal, Vector3.up) > 30f) { p.Reason = "Слишком крутой склон"; return p; }
+                if (s.DropUnit == null) { p.Reason = L.T("Choose a vehicle for the airdrop", "Выбери технику для десанта"); return p; }
+                if (!s.DropUnit.AllowedForMe) { p.Reason = L.T("Other faction's vehicle", "Техника другой фракции"); return p; }
+                if (!known) { p.Reason = L.T("Terrain isn't loaded here — move the camera closer", "Рельеф здесь не прогружен — подлети камерой ближе"); return p; }
+                if (!land) { p.Reason = L.T("Airdrop — land only", "Десант — только на сушу"); return p; }
+                if (PathfindingAgent.RaycastTerrain(local, out var hit) && Vector3.Angle(hit.normal, Vector3.up) > 30f) { p.Reason = L.T("Slope is too steep", "Слишком крутой склон"); return p; }
             }
             else if (MunitionFor(s) == null)
             {
-                p.Reason = "В игре не найден подходящий боеприпас";
+                p.Reason = L.T("No suitable munition found in the game", "В игре не найден подходящий боеприпас");
                 return p;
             }
             p.Ok = true;
-            p.Reason = "Можно";
+            p.Reason = L.T("OK", "Можно");
             return p;
         }
 
@@ -484,7 +524,7 @@ namespace FieldCommand
             var def = MunitionFor(s);
             GameApi.TryGetLocal(out _, out var hq);
             float delay = Mathf.Max(0f, Delay.Value);
-            toast?.Invoke($"{s.Name}: вызван, удар через {delay:0} с");
+            toast?.Invoke(L.T($"{s.Name}: called in, strike in {delay:0} s", $"{s.Name}: вызван, удар через {delay:0} с"));
             yield return new WaitForSeconds(delay);
             Vector3 c = p.Position.ToLocalPosition();
             Vector3 fwd = p.Rotation * Vector3.forward;
@@ -499,7 +539,7 @@ namespace FieldCommand
             {
             if (salvo > 0)
             {
-                toast?.Invoke($"{s.Name}: залп {salvo + 1} из {salvos}");
+                toast?.Invoke(L.T($"{s.Name}: salvo {salvo + 1} of {salvos}", $"{s.Name}: залп {salvo + 1} из {salvos}"));
                 yield return new WaitForSeconds(Mathf.Max(SalvoInterval.Value, 0.5f));
             }
             c = p.Position.ToLocalPosition(); // floating origin may have moved between salvos
@@ -576,7 +616,7 @@ namespace FieldCommand
             int n = s.DropCount;
             float each = s.CurrentPrice() / Mathf.Max(n, 1);
             float delay = Mathf.Max(0f, Delay.Value);
-            toast?.Invoke($"Десант: {n} × {entry.Name}, высадка через {delay:0} с");
+            toast?.Invoke(L.T($"Airdrop: {n} × {entry.Name}, landing in {delay:0} s", $"Десант: {n} × {entry.Name}, высадка через {delay:0} с"));
             yield return new WaitForSeconds(delay);
             Vector3 c = p.Position.ToLocalPosition();
             Vector3 right = p.Rotation * Vector3.right;

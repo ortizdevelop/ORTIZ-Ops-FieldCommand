@@ -21,10 +21,12 @@ namespace FieldCommand
         public bool Static;             // building / container: never moves
         public bool Supply;             // containers & depots: just objects, they don't take a unit slot
         public string Name;
-        public string TypeName;
+        public string RoleKey;
+        public string TypeName => GameApi.RoleLabel(RoleKey);
         public float Price;
         public int GroupOrder;
-        public string GroupName;
+        internal Classifier.Group Group;
+        public string GroupName => Group.Name ?? "";
         public string Faction;          // faction name, FactionResolver.Shared, or null (unknown)
         public string FactionTag;
         public bool AllowedForMe;
@@ -184,10 +186,10 @@ namespace FieldCommand
                     Static = isStatic,
                     Supply = isStatic && (!(def is BuildingDefinition) || group.Order == Classifier.Depots.Order),
                     Name = name,
-                    TypeName = playable ? "" : RoleTag(def),
+                    RoleKey = playable ? "" : RoleTag(def),
                     Price = PriceOf(def),
                     GroupOrder = group.Order,
-                    GroupName = group.Name
+                    Group = group
                 });
             }
 
@@ -239,11 +241,23 @@ namespace FieldCommand
         private static string RoleTag(UnitDefinition def)
         {
             var r = def.roleIdentity;
-            if (r.antiAir >= 0.5f && r.antiSurface < 0.5f) return "ПВО";
-            if (r.antiRadar >= 0.5f) return "ПРЛ";
-            if (r.antiSurface >= 0.5f) return "Удар";
-            if (r.antiMissile >= 0.5f) return "ПРО";
+            if (r.antiAir >= 0.5f && r.antiSurface < 0.5f) return "aa";
+            if (r.antiRadar >= 0.5f) return "arm";
+            if (r.antiSurface >= 0.5f) return "strike";
+            if (r.antiMissile >= 0.5f) return "abm";
             return "";
+        }
+
+        public static string RoleLabel(string key)
+        {
+            switch (key)
+            {
+                case "aa": return L.T("AA", "ПВО");
+                case "arm": return L.T("Anti-radar", "ПРЛ");
+                case "strike": return L.T("Strike", "Удар");
+                case "abm": return L.T("Anti-missile", "ПРО");
+                default: return "";
+            }
         }
 
         public static float PriceOf(UnitDefinition def)
@@ -279,24 +293,24 @@ namespace FieldCommand
             var p = new Placement { Rotation = Quaternion.Euler(0f, headingDeg, 0f) };
             if (!IsServer())
             {
-                p.Reason = "Только одиночная игра / хост";
+                p.Reason = L.T("Single-player / host only", "Только одиночная игра / хост");
                 return p;
             }
             if (!TryGetLocal(out _, out var hq))
             {
-                p.Reason = "Нет фракции";
+                p.Reason = L.T("No faction", "Нет фракции");
                 return p;
             }
 
             if (!entry.AllowedForMe)
             {
-                p.Reason = "Техника другой фракции";
+                p.Reason = L.T("Other faction's vehicle", "Техника другой фракции");
                 return p;
             }
 
             if (entry.Playable && TryGetLocal(out var me, out _) && me.Aircraft != null && !me.Aircraft.disabled)
             {
-                p.Reason = "Сначала выйди из текущей техники";
+                p.Reason = L.T("Leave your current vehicle first", "Сначала выйди из текущей техники");
                 return p;
             }
 
@@ -313,14 +327,14 @@ namespace FieldCommand
                 {
                     if (!IsWaterAt(pt, out float d))
                     {
-                        p.Reason = "Корабль — только на воду";
+                        p.Reason = L.T("Ships — water only", "Корабль — только на воду");
                         return p;
                     }
                     minDepth = Mathf.Min(minDepth, d);
                 }
                 if (minDepth < Plugin.MinShipDepth.Value)
                 {
-                    p.Reason = $"Мелко ({minDepth:0} м)";
+                    p.Reason = L.T($"Too shallow ({minDepth:0} m)", $"Мелко ({minDepth:0} м)");
                     return p;
                 }
                 local.y = Datum.LocalSeaY;
@@ -329,12 +343,12 @@ namespace FieldCommand
             {
                 if (!PathfindingAgent.RaycastTerrain(local, out var hit) || hit.point.y < Datum.LocalSeaY + 0.3f)
                 {
-                    p.Reason = "Наземка — только на сушу";
+                    p.Reason = L.T("Ground units — land only", "Наземка — только на сушу");
                     return p;
                 }
                 if (Vector3.Angle(hit.normal, Vector3.up) > (entry.Static ? 20f : 35f))
                 {
-                    p.Reason = "Слишком крутой склон";
+                    p.Reason = L.T("Slope is too steep", "Слишком крутой склон");
                     return p;
                 }
                 local = hit.point + Vector3.up * (def.spawnOffset.y + 0.5f);
@@ -350,18 +364,18 @@ namespace FieldCommand
             int limit = entry.Supply ? 0 : (PendingForFaction ? Plugin.MaxFactionUnits.Value : Plugin.MaxOwnUnits.Value);
             if (limit > 0 && purchased.Count >= limit)
             {
-                p.Reason = "Достигнут лимит юнитов";
+                p.Reason = L.T("Unit limit reached", "Достигнут лимит юнитов");
                 return p;
             }
 
             if (GetFunds() < TotalPrice(entry))
             {
-                p.Reason = "Недостаточно денег";
+                p.Reason = L.T("Not enough money", "Недостаточно денег");
                 return p;
             }
 
             p.Ok = true;
-            p.Reason = "Можно";
+            p.Reason = L.T("OK", "Можно");
             return p;
         }
 
@@ -372,7 +386,7 @@ namespace FieldCommand
 
         public static bool IsInTerritory(FactionHQ hq, GlobalPosition pos, UnitCategory cat, out string reason)
         {
-            reason = "Вне своей территории";
+            reason = L.T("Outside your territory", "Вне своей территории");
             Vector3 p = pos.AsVector3();
             float baseR = cat == UnitCategory.Naval ? Plugin.NavalAirbaseRadius.Value : Plugin.AirbaseRadius.Value;
             float unitR = Plugin.FriendlyUnitRadius.Value;
@@ -415,7 +429,7 @@ namespace FieldCommand
                 }
                 else if (enemyR > 0f && d2 < enemyR * enemyR)
                 {
-                    reason = "Слишком близко к врагу";
+                    reason = L.T("Too close to the enemy", "Слишком близко к врагу");
                     return false;
                 }
             }
