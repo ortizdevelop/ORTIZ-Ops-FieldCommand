@@ -1,4 +1,9 @@
 # Changelog
+## 0.13.0
+- **Paid rearm without containers**: *Rearm $X* on every unit in the *Mine* tab, *Rearm all* at the top, or select your units on the map and press **Y**. Price = the game's cost of the missing rounds × multiplier (*2. Economy* → *Paid rearm: price multiplier*, ×1). Nuclear rounds are not sold.
+- **Naval supply containers and pallets** are placed on water now (they were refused as "land only"); ships rearm from them.
+- *Mine* tab: two-line unit cards — long names no longer push the buttons out of the window.
+- The purchase window is wider and can be **resized** by dragging its bottom-right corner.
 ## 0.12.1
 - Rotation while placing: **R** — clockwise, **Q** — counter-clockwise (new setting *Rotate back*). Tap — one step, hold — the unit keeps turning (*Rotation speed when held*, 120°/s by default).
 - Units bought for yourself are also painted in your colour in the Ground Control (RTS) commander view.

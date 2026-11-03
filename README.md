@@ -76,6 +76,7 @@ All keys can be rebound in the Configuration Manager (F1).
 | **K** | Fire at the enemy / missile under the cursor **from the current position** (artillery and SAMs engage at max range). On empty ground — clear the target |
 | **Shift+K** | Advance to firing range and attack |
 | **L** | Automatic missile defence — units pick and shoot down enemy missiles themselves (strategic and nuclear first) |
+| **Y** | Rearm the selected own units right where they stand, for money |
 | **Delete** | Scrap the selected purchased units (refund 50 % by default) |
 
 ## Purchase menu
@@ -86,10 +87,10 @@ The menu (F6) has a flat dark design with a side menu of tabs; at the bottom of 
 - **Naval** — carriers, LHAs, cruisers, destroyers, frigates, corvettes, support ships.
 - **Defences / depots** — static SAMs, gun positions, radars, depots and containers.
 - **Playable** — KAR (ground) and BOTE (naval) units you can drive yourself: *Modules & buy* → choose a module for each hardpoint with ◄ ► → place on the map or with the camera → you spawn inside.
-- **Mine** — every unit you bought: show on map, stop, get in (playable units).
+- **Mine** — every unit you bought: hold/release, stop, missile defence, show on map, get in (playable units), **paid rearm** on the spot (*Rearm $X*, *Rearm all*), scrap.
 - **Stratagems** — call-in support, see below.
 
-Units are shown as tiles with type, faction and price; **Camera** and **On map** start placement. The **EN / RU** button switches the language.
+The window can be resized by dragging its bottom-right corner. Naval supply containers / pallets are placed on water. Units are shown as tiles with type, faction and price; **Camera** and **On map** start placement. The **EN / RU** button switches the language.
 
 Units you bought **for yourself** are painted in their own colour on the map and on the 3D markers (also in the Ground Control RTS view). Default — orange; change it in F1 → *0. Interface* → *My units colour*.
 
@@ -199,11 +200,12 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **K** | Огонь по врагу/ракете под курсором с текущей позиции; по пустому месту — сбросить цель |
 | **Shift+K** | Выдвинуться на дистанцию огня и атаковать |
 | **L** | Автоматический перехват ракет (стратегические и ядерные — первыми) |
+| **Y** | Пополнить боезапас выделенных своих юнитов на месте за деньги |
 | **Delete** | Списать выделенных купленных юнитов с возвратом 50 % |
 
 ### Меню (F6)
 Окно в тёмном «плоском» стиле с боковым меню вкладок; внизу меню — бюджет, фракция и заработок. Акцентный цвет (оранжевый / бирюзовый / лаймовый) — F1 → *0. Interface*. Своя купленная техника выделяется своим цветом на карте и метках (по умолчанию оранжевый, *My units colour*). Если другой мод (например, Ground Control RTS) меняет цены, техника и флот продаются по исходным ценам игры. Вверху — переключатель «Себе / Фракции» и ползунки **лимита своих юнитов** и **лимита юнитов фракции** (1–150, кнопки −10 / − / + / +10).
-Вкладки: **Наземная**, **Флот**, **Оборона/склады**, **Играбельная** (выбор модулей → покупка → появляешься внутри), **Мои** (список купленного: показать на карте, стоп, сесть), **Стратегемы**.
+Вкладки: **Наземная**, **Флот**, **Оборона/склады** (морские контейнеры — на воду), **Играбельная** (выбор модулей → покупка → появляешься внутри), **Мои** (список купленного: держать/отпустить, стоп, ПРО, на карте, сесть, **платное пополнение боезапаса** на месте — «Пополнить $X», «Пополнить всех», на карте клавиша **Y**), **Стратегемы**. Окно растягивается за правый нижний угол.
 
 ### Стратегемы
 | Стратегема | Что делает | Цена | Перезарядка |
