@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.10.3";
+        public const string Version = "0.12.1";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -30,6 +30,7 @@ namespace FieldCommand
         // Controls
         internal static ConfigEntry<KeyboardShortcut> MenuKey;
         internal static ConfigEntry<KeyCode> RotateKey;
+        internal static ConfigEntry<KeyCode> RotateBackKey;
         internal static ConfigEntry<KeyCode> CameraPlaceKey;
         internal static ConfigEntry<KeyCode> CancelKey;
         internal static ConfigEntry<KeyCode> HoldKey;
@@ -55,6 +56,7 @@ namespace FieldCommand
         // Economy
         internal static ConfigEntry<FundsSource> Funds;
         internal static ConfigEntry<float> PriceMultiplier;
+        internal static ConfigEntry<bool> OriginalPrices;
         internal static ConfigEntry<float> MinPrice;
         internal static ConfigEntry<int> MaxOwnUnits;
         internal static ConfigEntry<int> MaxFactionUnits;
@@ -76,6 +78,7 @@ namespace FieldCommand
         internal static ConfigEntry<float> GroundAttackStandoff;
         internal static ConfigEntry<float> NavalAttackStandoff;
         internal static ConfigEntry<float> RotateStep;
+        internal static ConfigEntry<float> RotateSpeed;
         internal static ConfigEntry<bool> EnableResupply;
         internal static ConfigEntry<float> ResupplyRadius;
         internal static ConfigEntry<bool> SupplyTrucksAutonomous;
@@ -110,6 +113,8 @@ namespace FieldCommand
         internal static void BindConfig(ConfigFile Config)
         {
             L.BindLanguage(Config);
+            Theme.Bind(Config);
+            OwnedMarks.Bind(Config);
             const string sCtl = "1. Controls", rCtl = "1. Управление";
             const string sEco = "2. Economy", rEco = "2. Экономика";
             const string sTer = "3. Territory", rTer = "3. Территория";
@@ -121,7 +126,9 @@ namespace FieldCommand
             MenuKey = L.Bind(Config, sCtl, rCtl, "Purchase menu", "Меню покупки", new KeyboardShortcut(KeyCode.F6),
                 "Open / close the purchase menu", "Открыть/закрыть меню покупки юнитов");
             RotateKey = L.Bind(Config, sCtl, rCtl, "Rotate", "Повернуть", KeyCode.R,
-                "Rotate the unit while placing it (Shift — the other way)", "Повернуть юнит при расстановке (Shift — в обратную сторону)");
+                "Rotate the unit clockwise while placing it: tap — one step, hold — keeps turning", "Повернуть юнит по часовой при расстановке: нажатие — на шаг, зажать — крутится сам");
+            RotateBackKey = L.Bind(Config, sCtl, rCtl, "Rotate back", "Повернуть обратно", KeyCode.Q,
+                "Rotate the unit counter-clockwise while placing it: tap — one step, hold — keeps turning", "Повернуть юнит против часовой при расстановке: нажатие — на шаг, зажать — крутится сам");
             CameraPlaceKey = L.Bind(Config, sCtl, rCtl, "Place (camera)", "Поставить (камера)", KeyCode.G,
                 "Place the unit at the camera's aim point", "Поставить юнит в точку прицела в режиме камеры");
             CancelKey = L.Bind(Config, sCtl, rCtl, "Cancel", "Отмена", KeyCode.X,
@@ -173,6 +180,9 @@ namespace FieldCommand
                 "Player — личный бюджет игрока (как при покупке самолётов), Faction — казна фракции");
             PriceMultiplier = L.Bind(Config, sEco, rEco, "Price multiplier", "Множитель цены", 1f,
                 "Price = the unit's in-game cost × multiplier", "Цена = стоимость юнита в игре × множитель", new AcceptableValueRange<float>(0f, 10f));
+            OriginalPrices = L.Bind(Config, sEco, rEco, "Original game prices for vehicles and ships", "Исходные цены игры на технику и флот", true,
+                "Other mods (e.g. Ground Control RTS) may change unit prices. When on, vehicles and ships are sold at the game's own prices; defences and supply keep the current ones",
+                "Другие моды (например, Ground Control RTS) могут менять цены юнитов. Если включено — техника и корабли продаются по исходным ценам игры; оборона и снабжение — по текущим");
             MinPrice = L.Bind(Config, sEco, rEco, "Minimum price", "Минимальная цена", 0.5f,
                 "Minimum unit price (millions) if the unit costs 0 in the game", "Минимальная цена юнита (млн), если у юнита в игре стоимость 0");
             MaxOwnUnits = L.Bind(Config, sEco, rEco, "Own unit limit", "Лимит своих юнитов", 60,
@@ -219,7 +229,9 @@ namespace FieldCommand
             NavalAttackStandoff = L.Bind(Config, sBeh, rBeh, "Attack distance (naval), m", "Дистанция атаки (флот), м", 9000f,
                 "How far from the target ships stop when ordered to attack", "На каком расстоянии от цели останавливаются корабли при приказе «Атаковать»");
             RotateStep = L.Bind(Config, sBeh, rBeh, "Rotation step, deg", "Шаг поворота, град", 45f,
-                "How many degrees the rotate key turns the unit", "На сколько градусов поворачивать юнит клавишей поворота");
+                "How many degrees one tap of the rotate keys turns the unit", "На сколько градусов поворачивает одно нажатие клавиш поворота");
+            RotateSpeed = L.Bind(Config, sBeh, rBeh, "Rotation speed when held, deg/s", "Скорость поворота при зажатии, град/с", 120f,
+                "How fast the unit turns while a rotate key is held", "Как быстро крутится юнит, пока клавиша поворота зажата", new AcceptableValueRange<float>(10f, 720f));
             EnableResupply = L.Bind(Config, sBeh, rBeh, "Resupply from nearby ammo sources", "Пополнение боезапаса от ближайших источников", true,
                 "Stopped friendly units that are short of ammo are rearmed by the nearest friendly ammo container, depot or supply truck within the radius below",
                 "Стоящие союзные юниты, у которых не хватает боезапаса, пополняются от ближайшего союзного контейнера с боеприпасами, склада или машины снабжения в радиусе ниже");

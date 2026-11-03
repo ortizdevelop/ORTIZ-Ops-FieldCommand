@@ -189,7 +189,7 @@ namespace FieldCommand
                     Supply = isStatic && (!(def is BuildingDefinition) || group.Order == Classifier.Depots.Order),
                     Name = name,
                     RoleKey = playable ? "" : RoleTag(def),
-                    Price = PriceOf(def),
+                    Price = PriceOf(def, isStatic || group.Order == Classifier.Logistics.Order),
                     GroupOrder = group.Order,
                     Group = group
                 });
@@ -275,9 +275,54 @@ namespace FieldCommand
             }
         }
 
-        public static float PriceOf(UnitDefinition def)
+        public static float PriceOf(UnitDefinition def, bool keepCurrent = false)
         {
-            return Mathf.Max(def.value * Plugin.PriceMultiplier.Value, Plugin.MinPrice.Value);
+            float v = def.value;
+            if (!keepCurrent && Plugin.OriginalPrices.Value && TryOriginalValue(def, out float orig))
+            {
+                v = orig;
+            }
+            return Mathf.Max(v * Plugin.PriceMultiplier.Value, Plugin.MinPrice.Value);
+        }
+
+        private static System.Collections.IDictionary rtsAuthored;
+        private static bool rtsSearched;
+
+        /// <summary>
+        /// The price the game itself gives this unit. Ground Control (RTS) overwrites definition.value when its
+        /// mode starts, but remembers the authored values — read them from there.
+        /// </summary>
+        private static bool TryOriginalValue(UnitDefinition def, out float value)
+        {
+            value = 0f;
+            if (!rtsSearched)
+            {
+                rtsSearched = true;
+                try
+                {
+                    var t = HarmonyLib.AccessTools.TypeByName("GroundControlRts.CommanderEconomyService");
+                    var f = t == null ? null : HarmonyLib.AccessTools.Field(t, "AuthoredValues");
+                    rtsAuthored = f?.GetValue(null) as System.Collections.IDictionary;
+                    if (rtsAuthored != null) Plugin.Log.LogInfo("Ground Control (RTS) found: vehicle prices are taken from the game's original values");
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning("RTS price lookup: " + e.Message);
+                }
+            }
+            if (rtsAuthored == null || def == null) return false;
+            try
+            {
+                if (rtsAuthored.Contains(def))
+                {
+                    value = (float)rtsAuthored[def];
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+            return false;
         }
 
         // ---------- placement validation ----------

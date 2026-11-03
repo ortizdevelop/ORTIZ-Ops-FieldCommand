@@ -53,6 +53,7 @@ namespace FieldCommand
         // airdrop only
         public CatalogEntry DropUnit;
         public int DropCount = 2;
+        public bool DropForFaction;
 
         public float CurrentPrice()
         {
@@ -610,6 +611,13 @@ namespace FieldCommand
             }
         }
 
+        /// <summary>Distance between dropped vehicles along the line.</summary>
+        public static float DropSpacing(CatalogEntry entry)
+        {
+            var d = entry?.Definition;
+            return d == null ? 20f : Mathf.Max(Mathf.Max(d.length, d.width), 4f) + 14f;
+        }
+
         private static IEnumerator AirdropRoutine(MonoBehaviour host, Stratagem s, GameApi.Placement p, Action<Unit, float> onUnitDropped, Action<string> toast)
         {
             var entry = s.DropUnit;
@@ -619,21 +627,24 @@ namespace FieldCommand
             toast?.Invoke(L.T($"Airdrop: {n} × {entry.Name}, landing in {delay:0} s", $"Десант: {n} × {entry.Name}, высадка через {delay:0} с"));
             yield return new WaitForSeconds(delay);
             Vector3 c = p.Position.ToLocalPosition();
-            Vector3 right = p.Rotation * Vector3.right;
-            float spacing = Mathf.Max(entry.Definition.width, 4f) + 12f;
+            Vector3 fwd = p.Rotation * Vector3.forward;
+            float spacing = DropSpacing(entry);
+            bool forFaction = s.DropForFaction;
             for (int i = 0; i < n; i++)
             {
-                Vector3 g = c + right * ((i - (n - 1) * 0.5f) * spacing);
+                // a stick of vehicles along the flight direction (arrow), first one at the start of the line
+                Vector3 g = c + fwd * ((i - (n - 1) * 0.5f) * spacing);
                 if (!TryGroundY(g, out float gy) || gy < Datum.LocalSeaY + 0.3f) continue;
                 Vector3 ground = new Vector3(g.x, gy + entry.Definition.spawnOffset.y + 0.5f, g.z);
                 float h = Mathf.Max(AirdropHeight.Value, 0f);
                 // spawn up in the air: the game itself opens a parachute for a vehicle that starts > 10 m above ground
                 Vector3 start = h > 15f ? ground + Vector3.up * h : ground;
                 var pl = new GameApi.Placement { Ok = true, Position = start.ToGlobalPosition(), Rotation = p.Rotation };
-                GameApi.PendingForFaction = false;
+                GameApi.PendingForFaction = forFaction;
                 GameApi.PendingLoadout = null;
                 GameApi.PendingExtraCost = 0f;
                 Unit u = GameApi.SpawnNoCharge(entry, pl);
+                GameApi.PendingForFaction = false;
                 if (u == null) continue;
                 onUnitDropped?.Invoke(u, each);
                 if (h > 15f) host.StartCoroutine(EnsureParachute(u, ground.ToGlobalPosition(), h));
