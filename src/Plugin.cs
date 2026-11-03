@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.12.1";
+        public const string Version = "0.13.0";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -57,6 +57,8 @@ namespace FieldCommand
         internal static ConfigEntry<FundsSource> Funds;
         internal static ConfigEntry<float> PriceMultiplier;
         internal static ConfigEntry<bool> OriginalPrices;
+        internal static ConfigEntry<float> PaidRearmMultiplier;
+        internal static ConfigEntry<KeyCode> PaidRearmKey;
         internal static ConfigEntry<float> MinPrice;
         internal static ConfigEntry<int> MaxOwnUnits;
         internal static ConfigEntry<int> MaxFactionUnits;
@@ -138,6 +140,8 @@ namespace FieldCommand
             AttackKey = L.Bind(Config, sCtl, rCtl, "Attack", "Атаковать", KeyCode.K,
                 "On the map: selected units open fire at the enemy / missile under the cursor from where they stand. Shift+key — advance to firing range. On empty ground — clear the target",
                 "На карте: выделенные юниты открывают огонь по врагу/ракете под курсором с текущей позиции. Shift+клавиша — выдвинуться на дистанцию огня. По пустому месту — сбросить цель");
+            PaidRearmKey = L.Bind(Config, sCtl, rCtl, "Paid rearm (selected units)", "Платное пополнение (выделенные)", KeyCode.Y,
+                "On the map: rearm the selected own units right where they stand, for money", "На карте: пополнить боезапас выделенных своих юнитов на месте за деньги");
             MissileDefenseKey = L.Bind(Config, sCtl, rCtl, "Missile defence", "Перехват ракет", KeyCode.L,
                 "On the map: selected units pick and shoot down enemy missiles themselves (strategic and nuclear first)",
                 "На карте: выделенные юниты сами выбирают и сбивают вражеские ракеты (стратегические и ядерные — первыми)");
@@ -193,6 +197,8 @@ namespace FieldCommand
                 "How many units bought for the faction can be alive at the same time (1–" + MaxUnitLimit + "). Counted separately from yours. Also adjustable in the purchase menu",
                 "Сколько юнитов, купленных для фракции, может быть живо одновременно (1–" + MaxUnitLimit + "). Считается отдельно от своих. Меняется и прямо в меню покупки",
                 new AcceptableValueRange<int>(1, MaxUnitLimit));
+            PaidRearmMultiplier = L.Bind(Config, sEco, rEco, "Paid rearm: price multiplier", "Платное пополнение: множитель цены", 1f,
+                "Price of rearming without a container = the game's cost of the missing rounds × this multiplier", "Цена пополнения без контейнера = игровая стоимость недостающих боеприпасов × этот множитель", new AcceptableValueRange<float>(0f, 10f));
             ScrapRefundPercent = L.Bind(Config, sEco, rEco, "Scrap refund, %", "Возврат при списании, %", 50f,
                 "Share of the purchase price you get back when you scrap one of your units", "Сколько процентов цены покупки возвращается, если списать (убрать) своего юнита",
                 new AcceptableValueRange<float>(0f, 100f));

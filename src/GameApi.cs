@@ -378,7 +378,17 @@ namespace FieldCommand
             local.y = Datum.LocalSeaY;
             var def = entry.Definition;
 
-            if (entry.Category == UnitCategory.Naval)
+            if (entry.Static && IsNavalContainer(def))
+            {
+                // naval supply containers / pallets float: water only, any depth
+                if (!IsWaterAt(local, out float nd) || nd < 1.5f)
+                {
+                    p.Reason = L.T("Naval supply — water only", "Морское снабжение — только на воду");
+                    return p;
+                }
+                local.y = Datum.LocalSeaY;
+            }
+            else if (entry.Category == UnitCategory.Naval)
             {
                 float half = Mathf.Max(def.length * 0.5f, 5f);
                 Vector3 fwd = p.Rotation * Vector3.forward;
@@ -415,7 +425,8 @@ namespace FieldCommand
             }
             p.Position = local.ToGlobalPosition();
 
-            if (Plugin.RestrictToTerritory.Value && !IsInTerritory(hq, p.Position, entry.Category, out string why))
+            var territoryCat = entry.Static && IsNavalContainer(def) ? UnitCategory.Naval : entry.Category;
+            if (Plugin.RestrictToTerritory.Value && !IsInTerritory(hq, p.Position, territoryCat, out string why))
             {
                 p.Reason = why;
                 return p;
@@ -437,6 +448,14 @@ namespace FieldCommand
             p.Ok = true;
             p.Reason = L.T("OK", "Можно");
             return p;
+        }
+
+        /// <summary>Containers meant for ships ("Naval Supply Container", "Naval Supply Pallet"…) are placed on water.</summary>
+        public static bool IsNavalContainer(UnitDefinition def)
+        {
+            if (def == null || def.unitPrefab == null || def.unitPrefab.GetComponent<Container>() == null) return false;
+            string n = ((def.unitName ?? "") + " " + def.name).ToLowerInvariant();
+            return n.Contains("naval") || n.Contains("морск");
         }
 
         private static bool IsAnchorUnit(Unit u)
@@ -590,7 +609,8 @@ namespace FieldCommand
                 // containers: sit the box ON the ground (its pivot is in the middle) and keep it fixed,
                 // otherwise the physics pushes it through the terrain
                 var cpos = placement.Position;
-                cpos.y += Mathf.Max(entry.Definition.height, 1f) * 0.5f + 0.2f;
+                // on water a naval container floats with its lower part submerged
+                cpos.y += IsNavalContainer(entry.Definition) ? Mathf.Max(entry.Definition.height, 1f) * 0.2f : Mathf.Max(entry.Definition.height, 1f) * 0.5f + 0.2f;
                 var container = spawner.SpawnContainer(entry.Definition.unitPrefab, cpos, placement.Rotation, hq, name);
                 if (container != null)
                 {

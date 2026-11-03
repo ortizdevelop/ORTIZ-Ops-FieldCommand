@@ -253,5 +253,73 @@ namespace FieldCommand
                 return false;
             }
         }
+
+        // ---------------- paid rearm (no container needed) ----------------
+
+        /// <summary>Price of filling every normal weapon station of the unit (game round cost × multiplier). Nuclear rounds are not sold.</summary>
+        public static float PaidRearmCost(Unit u)
+        {
+            if (u == null || u.disabled || u.weaponStations == null) return 0f;
+            float cost = 0f;
+            foreach (var ws in u.weaponStations)
+            {
+                if (ws == null || ws.WeaponInfo == null || ws.WeaponInfo.cargo || ws.WeaponInfo.nuclear || ws.WeaponInfo.massPerRound <= 0f) continue;
+                int need = ws.FullAmmo - ws.GetAmmoTotal();
+                if (need > 0) cost += need * Mathf.Max(ws.WeaponInfo.costPerRound, 0f);
+            }
+            return cost * Mathf.Max(Plugin.PaidRearmMultiplier.Value, 0f);
+        }
+
+        public static bool NeedsAmmo(Unit u)
+        {
+            if (u == null || u.disabled || u.weaponStations == null) return false;
+            foreach (var ws in u.weaponStations)
+            {
+                if (ws == null || ws.WeaponInfo == null || ws.WeaponInfo.cargo || ws.WeaponInfo.nuclear || ws.WeaponInfo.massPerRound <= 0f) continue;
+                if (ws.GetAmmoTotal() < ws.FullAmmo) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Refills the unit right where it stands and charges the price. Returns false if nothing to do or not enough money.</summary>
+        public static bool PaidRearm(Unit u, out float charged)
+        {
+            charged = 0f;
+            if (!GameApi.IsServer() || !NeedsAmmo(u)) return false;
+            float cost = PaidRearmCost(u);
+            if (GameApi.GetFunds() < cost) return false;
+            bool any = false;
+            foreach (var ws in u.weaponStations)
+            {
+                if (ws == null || ws.WeaponInfo == null || ws.WeaponInfo.cargo || ws.WeaponInfo.nuclear || ws.WeaponInfo.massPerRound <= 0f) continue;
+                int need = ws.FullAmmo - ws.GetAmmoTotal();
+                if (need <= 0) continue;
+                try
+                {
+                    ws.Rearm(need);
+                    any = true;
+                }
+                catch (Exception e)
+                {
+                    Warn("paid rearm", e);
+                }
+            }
+            if (!any) return false;
+            if (!NeedsAmmo(u))
+            {
+                u.HasRequestedRearm = false;
+                try
+                {
+                    u.NetworkHQ?.RearmMissionController?.DeregisterNeedsRearm(u);
+                }
+                catch
+                {
+                }
+            }
+            if (cost > 0f) GameApi.Spend(cost);
+            charged = cost;
+            Plugin.Log.LogInfo($"[Resupply] paid rearm: {u.unitName} for {GameApi.Money(cost)}");
+            return true;
+        }
     }
 }
