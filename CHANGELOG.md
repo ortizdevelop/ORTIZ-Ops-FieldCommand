@@ -1,4 +1,14 @@
 # Changelog
+## 0.12.1
+- Rotation while placing: **R** — clockwise, **Q** — counter-clockwise (new setting *Rotate back*). Tap — one step, hold — the unit keeps turning (*Rotation speed when held*, 120°/s by default).
+- Units bought for yourself are also painted in your colour in the Ground Control (RTS) commander view.
+## 0.12.0
+- Units bought **for yourself** get their own colour on the map and on the 3D HUD markers. Default — orange; F1 → *0. Interface* → *My units colour* / *Highlight my units*.
+- Vehicles and ships are sold at the game's **original prices** even when another mod (Ground Control RTS) raises them. Defences and supply keep the current prices. Setting: *2. Economy* → *Original game prices for vehicles and ships*.
+## 0.11.0
+- **New interface**: flat dark design with a side menu, unit tiles, orange accent (orange / cyan / lime — F1 → *0. Interface* → *Accent colour*). *Camera* is the main buy button.
+- Stratagems tab, loadout window, placement panel and messages restyled.
+- Airdrop: vehicles land in a line along the arrow and face that way; the drop line and every landing spot are shown on the map and in the camera. New choice: airdrop **for me** or **for the faction**.
 ## 0.10.3
 - Fixed: resupply stopped working as soon as an *Ammo box* (or another container without an access point) was on the map — every check failed with an error. Such containers now work as ammo sources too.
 - Fixed: playable KAR / BOTE-type vehicles bought with the mod (they are aircraft-based internally) were never rearmed. They are now rearmed when standing still near an ammo source.

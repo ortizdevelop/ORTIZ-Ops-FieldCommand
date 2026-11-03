@@ -62,7 +62,7 @@ All keys can be rebound in the Configuration Manager (F1).
 |---|---|
 | **LMB** | Place the unit / choose the target on the map |
 | **G** | Place the unit / choose the target at the camera's aim point |
-| **R** / **Shift+R** | Rotate the unit (or the carpet-bombing direction) by 45° |
+| **R** / **Q** | Rotate the unit (or the strike / airdrop direction) clockwise / counter-clockwise: tap — 45° step, hold — keeps turning |
 | **T** | Switch stratagem targeting: point ⇄ area |
 | **]** / **=** / **Num+** | Increase the area radius |
 | **[** / **-** / **Num-** | Decrease the area radius |
@@ -80,7 +80,7 @@ All keys can be rebound in the Configuration Manager (F1).
 
 ## Purchase menu
 
-The menu (F6) shows your budget, faction, unit counters and the money earned from kills. Below them are two sliders (with −10 / − / + / +10 buttons) for **your unit limit** and the **faction unit limit**, 1–150 each. Tabs:
+The menu (F6) has a flat dark design with a side menu of tabs; at the bottom of the side menu are your budget, faction and the money earned from kills. The accent colour (orange / cyan / lime) is set in F1 → *0. Interface*. At the top are the *For me / For the faction* switch and two sliders (with −10 / − / + / +10 buttons) for **your unit limit** and the **faction unit limit**, 1–150 each. Tabs:
 
 - **Ground** — AA, radars, artillery, tanks, IFVs, logistics… grouped by category.
 - **Naval** — carriers, LHAs, cruisers, destroyers, frigates, corvettes, support ships.
@@ -89,7 +89,11 @@ The menu (F6) shows your budget, faction, unit counters and the money earned fro
 - **Mine** — every unit you bought: show on map, stop, get in (playable units).
 - **Stratagems** — call-in support, see below.
 
-Each unit row has **On map** and **Camera** buttons that start placement. The **Language** button at the bottom switches English ⇄ Russian.
+Units are shown as tiles with type, faction and price; **Camera** and **On map** start placement. The **EN / RU** button switches the language.
+
+Units you bought **for yourself** are painted in their own colour on the map and on the 3D markers (also in the Ground Control RTS view). Default — orange; change it in F1 → *0. Interface* → *My units colour*.
+
+If another mod (e.g. Ground Control RTS) changes vehicle prices, FieldCommand still sells vehicles and ships at the game's original prices (defences and supply keep the current ones) — F1 → *2. Economy* → *Original game prices for vehicles and ships*.
 
 ## Stratagems
 
@@ -102,7 +106,7 @@ Choose a stratagem → **Target on map** or **Target with camera**. The strike l
 | **Missile strike** | Missiles diving vertically (4 by default, 1–16 per salvo): point — all into the nearest visible enemy; area — into visible enemies in the circle, with lead on moving targets | 40 M | 90 s |
 | **Tactical nuke** | One tactical nuclear warhead | 250 M | 300 s |
 | **Strategic nuke** | One strategic nuclear warhead | 800 M | 900 s |
-| **Airdrop** | 1–6 ground vehicles of your choice on real parachutes, anywhere on land — even behind enemy lines. Price = unit price × count × 1.3 | — | 90 s |
+| **Airdrop** | 1–6 ground vehicles of your choice on real parachutes, anywhere on land — even behind enemy lines. They land in a line along the arrow (R/Q), the drop line and every landing spot are shown on the map and in the camera. Choose **for me** or **for the faction**. Price = unit price × count × 1.3 | — | 90 s |
 
 For every strike you can pick the munition with ◄ ► (or **auto**).
 
@@ -186,7 +190,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **F6** | Меню покупки |
 | **J** | Выйти из техники KAR / BOTE |
 | **ЛКМ** / **G** | Поставить юнит / выбрать цель — на карте / в точку прицела камеры |
-| **R** / **Shift+R** | Повернуть юнит или направление бомбардировки |
+| **R** / **Q** | Повернуть юнит или направление удара/десанта по/против часовой: нажатие — шаг 45°, зажать — крутится сам |
 | **T** | Стратегема: точка ⇄ область |
 | **]** **=** **Num+** / **[** **-** **Num-** | Увеличить / уменьшить радиус области |
 | **X** / **Backspace** | Отмена |
@@ -198,7 +202,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **Delete** | Списать выделенных купленных юнитов с возвратом 50 % |
 
 ### Меню (F6)
-Вверху — ползунки **лимита своих юнитов** и **лимита юнитов фракции** (1–150, кнопки −10 / − / + / +10).
+Окно в тёмном «плоском» стиле с боковым меню вкладок; внизу меню — бюджет, фракция и заработок. Акцентный цвет (оранжевый / бирюзовый / лаймовый) — F1 → *0. Interface*. Своя купленная техника выделяется своим цветом на карте и метках (по умолчанию оранжевый, *My units colour*). Если другой мод (например, Ground Control RTS) меняет цены, техника и флот продаются по исходным ценам игры. Вверху — переключатель «Себе / Фракции» и ползунки **лимита своих юнитов** и **лимита юнитов фракции** (1–150, кнопки −10 / − / + / +10).
 Вкладки: **Наземная**, **Флот**, **Оборона/склады**, **Играбельная** (выбор модулей → покупка → появляешься внутри), **Мои** (список купленного: показать на карте, стоп, сесть), **Стратегемы**.
 
 ### Стратегемы
@@ -209,7 +213,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | Ракетный удар | Ракеты (по умолчанию 4, 1–16 в залпе) отвесно, с упреждением по движущимся целям | 40 млн | 90 с |
 | Тактический ЯУ | 1 тактический ядерный заряд | 250 млн | 300 с |
 | Стратегический ЯУ | 1 стратегический ядерный заряд | 800 млн | 900 с |
-| Десант | 1–6 единиц наземной техники на парашютах в любую точку суши | цена × кол-во × 1,3 | 90 с |
+| Десант | 1–6 единиц наземной техники на парашютах в любую точку суши, цепочкой вдоль стрелки (R/Q); линия и точки посадки видны на карте и в камере; **себе или фракции** | цена × кол-во × 1,3 | 90 с |
 
 Боеприпас для каждого удара можно выбрать кнопками ◄ ► (или **авто**).
 
