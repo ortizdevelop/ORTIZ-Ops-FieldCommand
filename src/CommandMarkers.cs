@@ -51,40 +51,40 @@ namespace FieldCommand
             }
         }
 
+        /// <summary>Same look as the game's HUD and Ground Control RTS: the unit's own outlined "friendly" icon at the unit, tinted.</summary>
         private static void DrawOne(Camera cam, Unit u, Color color, float sizeMul)
         {
             if (u == null || u.disabled || u.definition == null) return;
             try
             {
-                float h = Mathf.Max(u.definition.height, 2f);
-                Vector3 world = u.transform.position + Vector3.up * (h + 4f);
+                Vector3 world = u.transform.position;
+                Vector3 camPos = cam.transform.position;
+                if (Vector3.Dot(world - camPos, cam.transform.forward) <= 0f) return;
                 Vector3 sp = cam.WorldToScreenPoint(world);
-                if (sp.z <= 0f || sp.x < -40f || sp.y < -40f || sp.x > Screen.width + 40f || sp.y > Screen.height + 40f) return;
-                float dist = sp.z;
-                // big up close, never smaller than a readable symbol far away
-                float size = Mathf.Clamp(900f / Mathf.Max(dist, 1f) * 10f, 16f, 34f) * sizeMul;
+                if (sp.z <= 0f || sp.x < 0f || sp.y < 0f || sp.x > Screen.width || sp.y > Screen.height) return;
+
+                var sprite = u.definition.friendlyIcon;
+                if (sprite == null && GameAssets.i != null) sprite = GameAssets.i.targetUnitSpriteFriendly;
+                if (sprite == null || sprite.texture == null) return;
+
+                // the game shrinks markers with distance (like RTS: 1 → 0.45 between ~12 and 37 km)
+                float t = Mathf.Clamp01(Vector3.Distance(camPos, world) * 4E-05f - 0.5f);
+                float scale = Mathf.Lerp(1f, 0.45f, t);
+                float iconSize = u.definition.iconSize > 0f ? u.definition.iconSize : 1f;
+                float hmd = PlayerSettings.hmdIconSize > 0f ? PlayerSettings.hmdIconSize : 1f;
+                var sr = sprite.rect;
+                // HUD marker size = iconSize × "HMD icon size" setting (30 by default) × distance scale, on a 1080p-referenced canvas
+                float h = Mathf.Max(iconSize * hmd * scale * (Screen.height / 1080f) * sizeMul, 10f);
+                float w = h * (sr.width / Mathf.Max(sr.height, 1f));
                 var c = new Vector2(sp.x, Screen.height - sp.y);
-                var r = new Rect(c.x - size * 0.5f, c.y - size * 0.5f, size, size);
+                var r = new Rect(c.x - w * 0.5f, c.y - h * 0.5f, w, h);
 
+                var tex = sprite.texture;
+                var tr = sprite.textureRect;
+                var uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
                 Color old = GUI.color;
-                // dark plate so the symbol reads over sky and terrain
-                GUI.color = new Color(0f, 0f, 0f, 0.45f);
-                GUI.DrawTexture(new Rect(r.x - 3f, r.y - 3f, r.width + 6f, r.height + 6f), Texture2D.whiteTexture);
-                GUI.color = color;
-                GUI.DrawTexture(new Rect(r.x - 3f, r.yMax + 3f, r.width + 6f, 2f), Texture2D.whiteTexture);
-
-                var sprite = u.definition.mapIcon;
-                if (sprite != null && sprite.texture != null)
-                {
-                    var tr = sprite.textureRect;
-                    var tex = sprite.texture;
-                    var uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
-                    GUI.DrawTextureWithTexCoords(r, tex, uv, true);
-                }
-                else
-                {
-                    GUI.DrawTexture(new Rect(c.x - 4f, c.y - 4f, 8f, 8f), Texture2D.whiteTexture);
-                }
+                GUI.color = new Color(color.r, color.g, color.b, 0.95f);
+                GUI.DrawTextureWithTexCoords(r, tex, uv, true);
                 GUI.color = old;
             }
             catch
