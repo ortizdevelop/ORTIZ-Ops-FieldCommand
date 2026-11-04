@@ -92,7 +92,7 @@ The menu (F6) has a flat dark design with a side menu of tabs; at the bottom of 
 
 The window can be resized by dragging its bottom-right corner. Naval supply containers / pallets are placed on water. Units are shown as tiles with type, faction and price; **Camera** and **On map** start placement. The **EN / RU** button switches the language.
 
-Units you bought **for yourself** are painted in their own colour on the map and on the 3D markers (also in the Ground Control RTS view). Default — orange; change it in F1 → *0. Interface* → *My units colour*.
+Units you bought **for yourself** are painted in their own colour on the map and on the 3D markers (also in the Ground Control RTS view). In command mode (menu open or placing) an RTS-style symbol is shown above each of your units in the 3D view (*Markers above my units*: CommandMode / Always / Off). With the camera you place with the **mouse**: point and click LMB (or G). Default — orange; change it in F1 → *0. Interface* → *My units colour*.
 
 If another mod (e.g. Ground Control RTS) changes vehicle prices, FieldCommand still sells vehicles and ships at the game's original prices (defences and supply keep the current ones) — F1 → *2. Economy* → *Original game prices for vehicles and ships*.
 

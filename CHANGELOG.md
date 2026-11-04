@@ -1,4 +1,7 @@
 # Changelog
+## 0.14.0
+- **Camera placement with the mouse again**: while placing units, containers, ships or stratagems with the camera the cursor is shown — point with the mouse and click **LMB** (or G / Enter). When placement ends or the menu (F6) closes, the cursor goes back to the game's state (hidden in flight).
+- **RTS-style markers** above your purchased units in the 3D view: the unit's own map symbol in your colour (faction-bought units in soft green). Shown in command mode — while the purchase menu is open or you are placing. F1 → *0. Interface* → *Markers above my units* (CommandMode / Always / Off), *Markers above faction-bought units*.
 ## 0.13.1
 - Fixed: after closing the purchase menu (F6) the mouse cursor stayed on screen until the map was opened and closed. The cursor now goes back to the game's own state right away.
 ## 0.13.0
