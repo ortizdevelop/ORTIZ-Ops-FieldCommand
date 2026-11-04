@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.14.1";
+        public const string Version = "0.14.2";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -118,6 +118,7 @@ namespace FieldCommand
             Theme.Bind(Config);
             OwnedMarks.Bind(Config);
             CommandMarkers.Bind(Config);
+            RangeOverlay.Bind(Config);
             const string sCtl = "1. Controls", rCtl = "1. Управление";
             const string sEco = "2. Economy", rEco = "2. Экономика";
             const string sTer = "3. Territory", rTer = "3. Территория";

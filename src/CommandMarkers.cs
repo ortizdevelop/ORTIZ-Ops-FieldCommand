@@ -34,6 +34,88 @@ namespace FieldCommand
                     null, new ConfigurationManagerAttributes { Order = 770 }));
         }
 
+        // Some unit icons are stored as a light glyph on an opaque black square (the game draws them additively).
+        // We make a transparent copy of each icon once: alpha = brightness, colour = white-normalised glyph.
+        private static readonly Dictionary<Sprite, Texture2D> cleanIcons = new Dictionary<Sprite, Texture2D>();
+        private static readonly HashSet<Sprite> pending = new HashSet<Sprite>();
+
+        private static Texture2D Clean(Sprite s)
+        {
+            if (cleanIcons.TryGetValue(s, out var t)) return t;
+            pending.Add(s);
+            return null;
+        }
+
+        /// <summary>Called from Update (outside of OnGUI) — render targets can be used safely here.</summary>
+        public static void ProcessPending()
+        {
+            if (pending.Count == 0) return;
+            foreach (var s in pending)
+            {
+                Texture2D t = null;
+                try
+                {
+                    t = MakeClean(s);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning("[Markers] icon " + (s != null ? s.name : "?") + ": " + e.Message);
+                }
+                if (s != null) cleanIcons[s] = t;
+            }
+            pending.Clear();
+        }
+
+        private static Texture2D MakeClean(Sprite s)
+        {
+            if (s == null || s.texture == null) return null;
+            var tex = s.texture;
+            // sprite bounds in texture pixels (works for packed and tight sprites)
+            Vector2 mn = new Vector2(float.MaxValue, float.MaxValue), mx = new Vector2(float.MinValue, float.MinValue);
+            foreach (var uv in s.uv)
+            {
+                mn = Vector2.Min(mn, uv);
+                mx = Vector2.Max(mx, uv);
+            }
+            int x0 = Mathf.Clamp(Mathf.FloorToInt(mn.x * tex.width), 0, tex.width - 1);
+            int y0 = Mathf.Clamp(Mathf.FloorToInt(mn.y * tex.height), 0, tex.height - 1);
+            int w = Mathf.Clamp(Mathf.CeilToInt(mx.x * tex.width) - x0, 1, tex.width - x0);
+            int h = Mathf.Clamp(Mathf.CeilToInt(mx.y * tex.height) - y0, 1, tex.height - y0);
+
+            var rt = RenderTexture.GetTemporary(tex.width, tex.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+            var prev = RenderTexture.active;
+            var outT = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                Graphics.Blit(tex, rt);
+                RenderTexture.active = rt;
+                outT.ReadPixels(new Rect(x0, y0, w, h), 0, 0, false);
+            }
+            finally
+            {
+                RenderTexture.active = prev;
+                RenderTexture.ReleaseTemporary(rt);
+            }
+            var px = outT.GetPixels32();
+            for (int i = 0; i < px.Length; i++)
+            {
+                var p = px[i];
+                int m = Math.Max(p.r, Math.Max(p.g, p.b));
+                int a = p.a * m / 255;
+                if (m > 0)
+                {
+                    p.r = (byte)(p.r * 255 / m);
+                    p.g = (byte)(p.g * 255 / m);
+                    p.b = (byte)(p.b * 255 / m);
+                }
+                p.a = (byte)a;
+                px[i] = p;
+            }
+            outT.SetPixels32(px);
+            outT.Apply(false, false);
+            return outT;
+        }
+
         public static bool ShouldDraw(bool commandMode)
         {
             if (Mode == null || Mode.Value == MarkerMode.Off) return false;
@@ -79,12 +161,11 @@ namespace FieldCommand
                 var c = new Vector2(sp.x, Screen.height - sp.y);
                 var r = new Rect(c.x - w * 0.5f, c.y - h * 0.5f, w, h);
 
-                var tex = sprite.texture;
-                var tr = sprite.textureRect;
-                var uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
+                var clean = Clean(sprite);
+                if (clean == null) return;
                 Color old = GUI.color;
                 GUI.color = new Color(color.r, color.g, color.b, 0.95f);
-                GUI.DrawTextureWithTexCoords(r, tex, uv, true);
+                GUI.DrawTexture(r, clean, ScaleMode.StretchToFill, true);
                 GUI.color = old;
             }
             catch

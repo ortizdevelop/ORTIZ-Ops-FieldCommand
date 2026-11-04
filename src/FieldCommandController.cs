@@ -67,6 +67,7 @@ namespace FieldCommand
         {
             try
             {
+                CommandMarkers.ProcessPending();
                 Tick();
             }
             catch (Exception e)
@@ -769,6 +770,27 @@ namespace FieldCommand
             Toast(L.T($"Firing at: {tname}. In range: {inRange} of {sel.Count}{tail}", $"Огонь по: {tname}. В зоне досягаемости {inRange} из {sel.Count}{tail}"));
         }
 
+        private void DrawRangeOverlay()
+        {
+            try
+            {
+                var map = SceneSingleton<DynamicMap>.i;
+                if (map == null) return;
+                var sel = SelectedFriendlyCommandables();
+                if (sel.Count == 0) return;
+                Unit hover = null;
+                if (map.TryGetCursorCoordinates(out var cursor) && GameApi.TryGetLocal(out _, out var hq))
+                {
+                    float mpp = map.mapDimension / (900f * map.mapImage.transform.lossyScale.x);
+                    hover = FindTargetNear(hq, cursor, Mathf.Clamp(22f * mpp, 60f, 6000f));
+                }
+                RangeOverlay.Draw(map, sel, hover);
+            }
+            catch
+            {
+            }
+        }
+
         private static Unit FindTargetNear(FactionHQ hq, GlobalPosition pos, float radius)
         {
             Unit best = null;
@@ -911,6 +933,11 @@ namespace FieldCommand
             if (CommandMarkers.ShouldDraw(menuOpen || mode != PlaceMode.None))
             {
                 CommandMarkers.Draw(GetCamera(), purchased, factionBought);
+            }
+
+            if (DynamicMap.mapMaximized && mode == PlaceMode.None && RangeOverlay.Enabled.Value && Event.current.type == EventType.Repaint)
+            {
+                DrawRangeOverlay();
             }
 
             if (menuOpen)
