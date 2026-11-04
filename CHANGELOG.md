@@ -1,4 +1,7 @@
 # Changelog
+## 0.14.2
+- **Weapon range on the map**: select your units on the big map and their firing range is drawn around them — solid ring for ground/sea targets, dashed inner ring for the minimum range (artillery), dashed cyan ring for air targets. Point at an enemy and you see straight away who can hit it: green lines — will fire, red — out of range (with how much is missing). Lines to already ordered targets are shown too. F1 → *0. Interface* → *Weapon range on map*.
+- Unit markers: icons that the game stores on a black square are now drawn transparent.
 ## 0.14.1
 - Unit markers now use the game's own outlined HUD icons (the same ones the game and Ground Control RTS show), drawn right at the unit, sized like the game's markers (respects the *HMD icon size* setting) and tinted in your colour.
 ## 0.14.0
