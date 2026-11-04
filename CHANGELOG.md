@@ -1,4 +1,6 @@
 # Changelog
+## 0.13.1
+- Fixed: after closing the purchase menu (F6) the mouse cursor stayed on screen until the map was opened and closed. The cursor now goes back to the game's own state right away.
 ## 0.13.0
 - **Paid rearm without containers**: *Rearm $X* on every unit in the *Mine* tab, *Rearm all* at the top, or select your units on the map and press **Y**. Price = the game's cost of the missing rounds × multiplier (*2. Economy* → *Paid rearm: price multiplier*, ×1). Nuclear rounds are not sold.
 - **Naval supply containers and pallets** are placed on water now (they were refused as "land only"); ships rearm from them.
