@@ -80,6 +80,7 @@ namespace FieldCommand
             bool inMission = GameApi.InMission();
             if (!inMission)
             {
+                cursorForced = false;
                 if (menuOpen || mode != PlaceMode.None || purchased.Count > 0)
                 {
                     menuOpen = false;
@@ -140,6 +141,11 @@ namespace FieldCommand
             {
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
+                cursorForced = true;
+            }
+            else if (cursorForced)
+            {
+                RestoreGameCursor();
             }
 
             switch (mode)
@@ -308,6 +314,27 @@ namespace FieldCommand
         }
 
         private float rotateHeld;
+        private bool cursorForced;
+
+        /// <summary>
+        /// We show the cursor ourselves while the menu is open, bypassing the game's CursorManager. When the menu
+        /// closes, give the cursor back to the game's own state (hidden and locked in flight / free camera,
+        /// visible on the map or in menus) — otherwise it stayed on screen until the map was toggled.
+        /// </summary>
+        private void RestoreGameCursor()
+        {
+            cursorForced = false;
+            try
+            {
+                bool visible = CursorManager.Visible;
+                Cursor.visible = visible;
+                Cursor.lockState = visible ? CursorLockMode.None : CursorLockMode.Locked;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning("Cursor restore: " + e.Message);
+            }
+        }
 
         /// <summary>R — clockwise, Q — counter-clockwise (Shift swaps). Tap = one step; hold = keeps turning smoothly.</summary>
         private void TickRotation()
