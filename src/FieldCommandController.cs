@@ -137,7 +137,9 @@ namespace FieldCommand
                 }
             }
 
-            if (menuOpen)
+            // the mouse is needed in the menu and while placing with the camera (aim with the mouse, LMB to place);
+            // afterwards the game gets its own cursor state back
+            if (menuOpen || (mode == PlaceMode.Camera && !DynamicMap.mapMaximized))
             {
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
@@ -223,7 +225,7 @@ namespace FieldCommand
                     map.Minimize();
                 }
                 TrySwitchToFreeCamera();
-                Toast(Plugin.CameraPlaceKey.Value + L.T(" — place at the aim point, ", " — поставить в прицел, ") + RotKeys + L.T(" — rotate (hold — turns), ", " — повернуть (зажать — крутится), ") + Plugin.CancelKey.Value + L.T(" — cancel", " — отмена"), 5f);
+                Toast(L.T("LMB / ", "ЛКМ / ") + Plugin.CameraPlaceKey.Value + L.T(" — place under the cursor, ", " — поставить под курсор, ") + RotKeys + L.T(" — rotate (hold — turns), ", " — повернуть (зажать — крутится), ") + Plugin.CancelKey.Value + L.T(" — cancel", " — отмена"), 5f);
             }
         }
 
@@ -516,7 +518,8 @@ namespace FieldCommand
             UpdatePreview(point.ToGlobalPosition());
             UpdateGhost();
 
-            if (Input.GetKeyDown(Plugin.CameraPlaceKey.Value) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            bool click = Input.GetMouseButtonDown(0) && Cursor.visible && !IsOverOwnGui(Input.mousePosition) && GUIUtility.hotControl == 0;
+            if (click || Input.GetKeyDown(Plugin.CameraPlaceKey.Value) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
             {
                 TryPlace();
             }
@@ -905,6 +908,11 @@ namespace FieldCommand
             Theme.Apply();
             EnsureStyles();
 
+            if (CommandMarkers.ShouldDraw(menuOpen || mode != PlaceMode.None))
+            {
+                CommandMarkers.Draw(GetCamera(), purchased, factionBought);
+            }
+
             if (menuOpen)
             {
                 if (resizeTo.x > 0f)
@@ -945,7 +953,7 @@ namespace FieldCommand
             var r = HudRect;
             string how = mode == PlaceMode.Map
                 ? L.T($"LMB — place | {RotKeys} — rotate | {Plugin.CancelKey.Value} — exit", $"ЛКМ — поставить | {RotKeys} — поворот | {Plugin.CancelKey.Value} — выход")
-                : L.T($"{Plugin.CameraPlaceKey.Value}/Enter — place at the aim point | {RotKeys} — rotate | {Plugin.CancelKey.Value} — exit", $"{Plugin.CameraPlaceKey.Value}/Enter — поставить в прицел | {RotKeys} — поворот | {Plugin.CancelKey.Value} — выход");
+                : L.T($"LMB / {Plugin.CameraPlaceKey.Value} — place under the cursor | {RotKeys} — rotate | {Plugin.CancelKey.Value} — exit", $"ЛКМ / {Plugin.CameraPlaceKey.Value} — поставить под курсор | {RotKeys} — поворот | {Plugin.CancelKey.Value} — выход");
             if (strike != null && strike.HasArea)
             {
                 how = (strike.Point ? L.T("POINT", "ТОЧЕЧНО") : L.T($"AREA R={strike.Spread:0} m", $"ОБЛАСТЬ R={strike.Spread:0} м")) + L.T(" | T — point/area | [ ] or − + — radius | ", " | T — точечно/область | [ ] или − + — радиус | ") + how;
@@ -1950,7 +1958,7 @@ namespace FieldCommand
             };
             BeginPlacement(dummy, m);
             strike = s;
-            Toast(m == PlaceMode.Map ? L.T($"{s.Name}: LMB on the target, {RotKeys} — direction, {Plugin.CancelKey.Value} — cancel", $"{s.Name}: ЛКМ по цели, {RotKeys} — направление, {Plugin.CancelKey.Value} — отмена") : L.T($"{s.Name}: aim, {Plugin.CameraPlaceKey.Value} — call in", $"{s.Name}: наведи прицел, {Plugin.CameraPlaceKey.Value} — вызвать"), 5f);
+            Toast(m == PlaceMode.Map ? L.T($"{s.Name}: LMB on the target, {RotKeys} — direction, {Plugin.CancelKey.Value} — cancel", $"{s.Name}: ЛКМ по цели, {RotKeys} — направление, {Plugin.CancelKey.Value} — отмена") : L.T($"{s.Name}: point with the mouse, LMB / {Plugin.CameraPlaceKey.Value} — call in, {RotKeys} — direction", $"{s.Name}: укажи мышкой, ЛКМ / {Plugin.CameraPlaceKey.Value} — вызвать, {RotKeys} — направление"), 5f);
         }
 
         private void ShowOnMap(Unit u)
