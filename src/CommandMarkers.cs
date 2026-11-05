@@ -156,6 +156,96 @@ namespace FieldCommand
             }
         }
 
+        // ---------- fire mode badge: crosshair (fire at will) / grey crossed-out crosshair (fire on order) ----------
+
+        private static Texture2D badgeFree, badgeHold;
+
+        private static Texture2D MakeBadge(bool hold)
+        {
+            const int n = 64;
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, hideFlags = HideFlags.HideAndDontSave };
+            var px = new Color[n * n];
+            Color ring = hold ? new Color(0.62f, 0.66f, 0.69f, 1f) : new Color(1f, 0.48f, 0.18f, 1f);
+            Color slash = new Color(1f, 0.3f, 0.3f, 1f);
+            Color edge = new Color(0f, 0f, 0f, 0.85f);
+            float c = (n - 1) * 0.5f;
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x - c, dy = y - c;
+                float r = Mathf.Sqrt(dx * dx + dy * dy);
+                // distance to the shapes, in pixels
+                float dRing = Mathf.Abs(r - 19f) - 3f;
+                float ax = Mathf.Abs(dx), ay = Mathf.Abs(dy);
+                float dTickV = Mathf.Max(ax - 3f, Mathf.Max(12f - ay, ay - 30f));
+                float dTickH = Mathf.Max(ay - 3f, Mathf.Max(12f - ax, ax - 30f));
+                float dCross = Mathf.Min(dRing, Mathf.Min(dTickV, dTickH));
+                float dSlash = hold ? Mathf.Max(Mathf.Abs(dx - dy) / 1.41421f - 3.5f, r - 27f) : 99f;
+                Color col = new Color(0, 0, 0, 0);
+                // black outline under everything, so it reads on any terrain
+                float dAll = Mathf.Min(dCross, dSlash);
+                if (dAll < 2.5f) col = new Color(edge.r, edge.g, edge.b, edge.a * Mathf.Clamp01(2.5f - dAll));
+                float aCross = Mathf.Clamp01(0.5f - dCross);
+                if (aCross > 0f) col = Color.Lerp(col, ring, aCross);
+                float aSlash = Mathf.Clamp01(0.5f - dSlash);
+                if (aSlash > 0f) col = Color.Lerp(col, slash, aSlash);
+                px[y * n + x] = col;
+            }
+            t.SetPixels(px);
+            t.Apply(false, false);
+            return t;
+        }
+
+        public static Texture2D FireBadge(bool hold)
+        {
+            if (hold) return badgeHold != null ? badgeHold : (badgeHold = MakeBadge(true));
+            return badgeFree != null ? badgeFree : (badgeFree = MakeBadge(false));
+        }
+
+        /// <summary>Fire mode badges over your purchased units in the 3D view, at the top right of their marker.</summary>
+        public static void DrawFireBadges(Camera cam, List<Unit> mine)
+        {
+            if (cam == null || Event.current.type != EventType.Repaint) return;
+            Vector3 camPos = cam.transform.position;
+            foreach (var u in mine)
+            {
+                try
+                {
+                    if (u == null || u.disabled || u.definition == null || u is Aircraft) continue;
+                    Vector3 world = u.transform.position;
+                    if (Vector3.Dot(world - camPos, cam.transform.forward) <= 0f) continue;
+                    Vector3 sp = cam.WorldToScreenPoint(world);
+                    if (sp.z <= 0f || sp.x < 0f || sp.y < 0f || sp.x > Screen.width || sp.y > Screen.height) continue;
+                    float t = Mathf.Clamp01(Vector3.Distance(camPos, world) * 4E-05f - 0.5f);
+                    float scale = Mathf.Lerp(1f, 0.45f, t);
+                    float iconSize = u.definition.iconSize > 0f ? u.definition.iconSize : 1f;
+                    float hmd = PlayerSettings.hmdIconSize > 0f ? PlayerSettings.hmdIconSize : 1f;
+                    float h = Mathf.Max(iconSize * hmd * scale * (Screen.height / 1080f), 10f);
+                    float s = Mathf.Clamp(h * 0.6f, 14f, 26f);
+                    var c = new Vector2(sp.x, Screen.height - sp.y);
+                    GUI.DrawTexture(new Rect(c.x + h * 0.5f, c.y - h * 0.5f - s * 0.7f, s, s), FireBadge(AreaFire.HoldFire.Contains(u)), ScaleMode.StretchToFill, true);
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        /// <summary>Same badges next to your units' icons on the big map.</summary>
+        public static void DrawFireBadgesOnMap(List<Unit> mine)
+        {
+            if (Event.current.type != EventType.Repaint) return;
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null) return;
+            foreach (var u in mine)
+            {
+                if (u == null || u.disabled || u is Aircraft) continue;
+                if (!RangeOverlay.ToGui(map, u.GlobalPosition(), out var g, out _)) continue;
+                const float s = 15f;
+                GUI.DrawTexture(new Rect(g.x + 7f, g.y - 7f - s, s, s), FireBadge(AreaFire.HoldFire.Contains(u)), ScaleMode.StretchToFill, true);
+            }
+        }
+
         private static void DrawOne(Camera cam, Unit u, Color color, float sizeMul)
         {
             if (u == null) return;

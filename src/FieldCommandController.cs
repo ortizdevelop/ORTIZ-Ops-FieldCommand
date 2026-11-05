@@ -1158,6 +1158,11 @@ namespace FieldCommand
             {
                 CommandMarkers.DrawEnemies(GetCamera());
             }
+            if (Plugin.FireModeBadges.Value)
+            {
+                if (DynamicMap.mapMaximized) CommandMarkers.DrawFireBadgesOnMap(purchased);
+                else if (commandMode || menuOpen || mode != PlaceMode.None) CommandMarkers.DrawFireBadges(GetCamera(), purchased);
+            }
 
             try
             {
