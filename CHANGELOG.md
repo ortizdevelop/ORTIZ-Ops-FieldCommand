@@ -1,4 +1,6 @@
 # Changelog
+## 0.22.0
+- **Fire mode badges** over your purchased units — in command mode (3D) and on the map: an **orange crosshair** — fire at will, a **grey crossed-out crosshair** — fire only on order. Option *Fire mode badges over own units* in F1 → *4. Behaviour*.
 ## 0.21.0
 - **Unit groups**: in command mode **Ctrl+1…0** remembers the selected units as a group, **1…0** selects it (**Shift** — add to the selection, press twice — the camera flies to the group). Group numbers are shown over the units and as clickable chips in the top bar. Works on the map too.
 - **Quick buy**: select one of your units and press **Ctrl+C** — placement of one more unit of the same type starts right away (with the camera, or on the map when it is open).
