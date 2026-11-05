@@ -72,13 +72,21 @@ namespace FieldCommand
         /// <summary>Best station of this list that can reach and hurt the target, or null.</summary>
         public static WeaponStation BestStation(IEnumerable<WeaponStation> stations, Unit attacker, Unit target, TrackingInfo tracking, float dist, float armorOptimism)
         {
-            WeaponStation best = null;
+            WeaponStation best = null, fallback = null;
             float bestScore = 0f;
+            bool airTarget = target is Aircraft || target is Missile;
             foreach (var ws in stations)
             {
                 if (ws == null || ws.WeaponInfo == null || ws.Ammo <= 0) continue;
-                var req = ws.WeaponInfo.targetRequirements;
+                var wi = ws.WeaponInfo;
+                var req = wi.targetRequirements;
                 if (dist > req.maxRange || dist < req.minRange) continue;
+                if (wi.cargo || wi.troops || wi.jammer || wi.sling) continue;
+                // an ordered target: any weapon of the right kind that reaches it will do, even if the AI
+                // would not pick it by itself (nuclear, hypersonic, strategic weapons have strict AI rules)
+                bool kindOk = airTarget ? wi.effectiveness.antiAir > 0f || wi.effectiveness.antiMissile > 0f
+                                        : wi.effectiveness.antiSurface > 0f || wi.effectiveness.antiRadar > 0f || wi.nuclear;
+                if (kindOk && fallback == null) fallback = ws;
                 float score;
                 try
                 {
@@ -95,7 +103,7 @@ namespace FieldCommand
                     best = ws;
                 }
             }
-            return best;
+            return best ?? fallback;
         }
 
         /// <summary>Max reach of a unit's weapons (for UI / missile defence).</summary>
@@ -175,6 +183,8 @@ namespace FieldCommand
             }
         }
 
+        private static readonly System.Reflection.MethodInfo hqAssess = AccessTools.Method(typeof(FireControl), "HQTargetAssessment");
+
         /// <summary>Make all turrets of a focused unit re-evaluate now (instead of waiting for their own timer).</summary>
         public static void Nudge(Unit u)
         {
@@ -184,6 +194,13 @@ namespace FieldCommand
                 foreach (var t in u.GetComponentsInChildren<Turret>())
                 {
                     Turret_ChooseTarget_Patch.TryForce(t, false);
+                }
+                // launchers run by fire control (MLRS, ballistic / nuclear / hypersonic batteries) only plan a
+                // salvo when the game asks them to — ask now so the ordered target gets fired at
+                if (TryGet(u, out _))
+                {
+                    var fc = u.GetComponent<FireControl>();
+                    if (fc != null && hqAssess != null) hqAssess.Invoke(fc, null);
                 }
             }
             catch (Exception e)
@@ -340,8 +357,8 @@ namespace FieldCommand
                 var tracking = FocusFire.Track(attached, t);
                 if (tracking == null) return true;
                 float d = Vector3.Distance(attached.transform.position, t.transform.position);
-                var ws = stations[0];
-                if (FocusFire.BestStation(new[] { ws }, attached, t, tracking, d, 0f) == null) return true;
+                var ws = FocusFire.BestStation(stations, attached, t, tracking, d, 0f);
+                if (ws == null) return !AreaFire.Blocks(attached);
 
                 // don't waste a second salvo on a ground target that already has our missiles inbound
                 var inbound = tr.Field("currentMissiles").GetValue<List<Missile>>();

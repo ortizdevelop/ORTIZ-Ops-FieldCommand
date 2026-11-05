@@ -82,7 +82,9 @@ namespace FieldCommand
             try
             {
                 var s = md.unitPrefab.GetComponentInChildren<MissileSeeker>(true);
-                ok = s != null && areaSeekers.Contains(s.GetType().Name);
+                // native ones fly to a known position; any other seeker is steered by us (see GenericSeekPostfix),
+                // except cruise missiles, which destroy themselves without a target
+                ok = s != null && s.GetType().Name != "OpticalSeekerCruiseMissile";
             }
             catch
             {
@@ -96,8 +98,8 @@ namespace FieldCommand
         private static bool SurfaceWeapon(WeaponStation ws)
         {
             var wi = ws?.WeaponInfo;
-            if (wi == null || ws.Ammo <= 0 || wi.nuclear || wi.cargo || wi.troops || wi.jammer || wi.sling || ws.Weapons == null || ws.Weapons.Count == 0) return false;
-            if (wi.effectiveness.antiSurface <= 0f) return false;
+            if (wi == null || ws.Ammo <= 0 || wi.cargo || wi.troops || wi.jammer || wi.sling || ws.Weapons == null || ws.Weapons.Count == 0) return false;
+            if (wi.effectiveness.antiSurface <= 0f && !wi.nuclear) return false;
             return wi.effectiveness.antiAir <= wi.effectiveness.antiSurface;
         }
 
@@ -434,34 +436,72 @@ namespace FieldCommand
 
         public static void OnMissileSpawned(Missile m, Unit target, Unit owner)
         {
-            if (m == null || target != null || owner == null || !Orders.TryGetValue(owner, out var o)) return;
+            if (m == null || owner == null || !Orders.TryGetValue(owner, out var o)) return;
             if (Missiles.Count > 400) foreach (var k in Missiles.Keys.Where(k => k == null || k.disabled).ToList()) Missiles.Remove(k);
             Missiles[m] = Pick(o.Center, o.Radius);
+            try
+            {
+                if (target != null) m.SetTarget(null); // a guided shell may carry a stale proximity target
+                var sk = m.GetComponentInChildren<MissileSeeker>(true);
+                if (sk != null) Apply(sk, true); // the seeker may already be initialised during Spawn
+            }
+            catch
+            {
+            }
         }
 
         private static readonly Dictionary<Type, FieldInfo[]> seekerFields = new Dictionary<Type, FieldInfo[]>();
+
+        /// <summary>Points the seeker at our area point. 'first' also re-plans the launch angle of ballistic missiles.</summary>
+        private static void Apply(MissileSeeker seeker, bool first)
+        {
+            var m = seekerMissileRef(seeker);
+            if (m == null || !Missiles.TryGetValue(m, out var p)) return;
+            var type = seeker.GetType();
+            if (!seekerFields.TryGetValue(type, out var f))
+            {
+                f = new[] { AccessTools.Field(type, "knownPos"), AccessTools.Field(type, "useDatalink"), AccessTools.Field(type, "useLaser"), AccessTools.Field(type, "targetAngle"), AccessTools.Field(type, "knownVel") };
+                seekerFields[type] = f;
+            }
+            f[0]?.SetValue(seeker, p);
+            if (!first) return;
+            f[1]?.SetValue(seeker, false);
+            f[2]?.SetValue(seeker, false);
+            f[4]?.SetValue(seeker, Vector3.zero);
+            if (f[3] != null)
+            {
+                // same formula as BallisticMissileGuidance.Initialize, now with the real distance
+                Vector3 v = p - m.GlobalPosition();
+                v.y = 0f;
+                float dv = m.GetRemainingDeltaV();
+                float a = Mathf.Asin(v.magnitude * 9.81f / Mathf.Max(dv * dv, 1f)) * 0.5f * Mathf.Rad2Deg;
+                float angle = a > 45f ? a : 90f - a;
+                if (float.IsNaN(angle)) angle = 45f;
+                f[3].SetValue(seeker, angle);
+            }
+        }
 
         public static void OnSeekerInitialized(MissileSeeker seeker)
         {
             try
             {
-                var m = seekerMissileRef(seeker);
-                if (m == null || !Missiles.TryGetValue(m, out var p)) return;
-                var type = seeker.GetType();
-                if (!seekerFields.TryGetValue(type, out var f))
-                {
-                    f = new[] { AccessTools.Field(type, "knownPos"), AccessTools.Field(type, "useDatalink"), AccessTools.Field(type, "useLaser"), AccessTools.Field(type, "aimPos") };
-                    seekerFields[type] = f;
-                }
-                f[0]?.SetValue(seeker, p);
-                f[1]?.SetValue(seeker, false);
-                f[2]?.SetValue(seeker, false);
-                f[3]?.SetValue(seeker, p);
-                m.SetAimpoint(p, Vector3.zero);
+                Apply(seeker, true);
             }
             catch (Exception e)
             {
                 Plugin.Log.LogWarning("[AreaFire] seeker: " + e.Message);
+            }
+        }
+
+        private static void SeekPrefix(MissileSeeker __instance)
+        {
+            if (Missiles.Count == 0) return;
+            try
+            {
+                Apply(__instance, false);
+            }
+            catch
+            {
             }
         }
 
@@ -476,10 +516,54 @@ namespace FieldCommand
                     var type = AccessTools.TypeByName(name);
                     var mi = type != null ? AccessTools.DeclaredMethod(type, "Initialize") : null;
                     if (mi != null) h.Patch(mi, postfix: post);
+                    var seek = type != null ? AccessTools.DeclaredMethod(type, "Seek") : null;
+                    if (seek != null) h.Patch(seek, prefix: new HarmonyMethod(typeof(AreaFire), nameof(SeekPrefix)));
                 }
                 catch (Exception e)
                 {
                     Plugin.Log.LogWarning("[AreaFire] patch " + name + ": " + e.Message);
+                }
+            }
+        }
+
+        /// <summary>For seekers that can't fly to a point by themselves: steer the projectile to the area point.</summary>
+        private static void GenericSeekPostfix(MissileSeeker __instance)
+        {
+            if (Missiles.Count == 0) return;
+            try
+            {
+                var m = seekerMissileRef(__instance);
+                if (m == null || !Missiles.TryGetValue(m, out var p) || m.disabled) return;
+                Vector3 to = p - m.GlobalPosition();
+                Vector3 vel = m.rb != null ? m.rb.velocity : Vector3.zero;
+                float fall = Kinematics.FallTime(-to.y, vel.y);
+                Vector3 flat = new Vector3(to.x, 0f, to.z);
+                float along = Vector3.Dot(flat.normalized, new Vector3(vel.x, 0f, vel.z));
+                float ttt = Mathf.Max(flat.magnitude, 10f) / Mathf.Max(along, 10f);
+                float err = fall > 0f ? Mathf.Clamp(ttt / fall, 0.5f, 1.5f) : 1f;
+                var aim = Kinematics.GetBallisticAimPoint(m, p, ttt, 0f, err, Vector3.zero);
+                m.SetAimpoint(aim, Vector3.zero);
+                if (!m.IsTangible() && m.owner != null && (m.owner.transform.position - m.transform.position).sqrMagnitude > 15f * 15f) m.SetTangible(true);
+            }
+            catch
+            {
+            }
+        }
+
+        public static void PatchGenericSeekers(Harmony h)
+        {
+            var post = new HarmonyMethod(typeof(AreaFire), nameof(GenericSeekPostfix));
+            foreach (var type in typeof(MissileSeeker).Assembly.GetTypes())
+            {
+                if (!type.IsSubclassOf(typeof(MissileSeeker)) || type.IsAbstract || areaSeekers.Contains(type.Name) || type.Name == "OpticalSeekerCruiseMissile") continue;
+                try
+                {
+                    var seek = AccessTools.DeclaredMethod(type, "Seek");
+                    if (seek != null && !seek.IsAbstract) h.Patch(seek, postfix: post);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning("[AreaFire] patch " + type.Name + ": " + e.Message);
                 }
             }
         }

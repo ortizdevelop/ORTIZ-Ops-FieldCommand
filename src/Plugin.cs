@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.18.0";
+        public const string Version = "0.20.0";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -38,7 +38,10 @@ namespace FieldCommand
         internal static ConfigEntry<KeyboardShortcut> LeaveKey;
         internal static ConfigEntry<KeyCode> MissileDefenseKey;
         internal static ConfigEntry<KeyCode> HoldFireKey;
+        internal static ConfigEntry<KeyCode> StopKey;
+        internal static ConfigEntry<KeyCode> CeaseFireKey;
         internal static ConfigEntry<bool> EnemyMarkers;
+        internal static ConfigEntry<bool> DriveOffRoad;
         internal static ConfigEntry<bool> MiddleMouseLook;
         internal static ConfigEntry<KeyCode> AreaFireKey;
         internal static ConfigEntry<bool> SpawnHoldFire;
@@ -104,6 +107,7 @@ namespace FieldCommand
                 var h = new HarmonyLib.Harmony(Guid);
                 h.PatchAll(typeof(Plugin).Assembly);
                 AreaFire.PatchSeekers(h);
+                AreaFire.PatchGenericSeekers(h);
             }
             catch (System.Exception e)
             {
@@ -159,6 +163,11 @@ namespace FieldCommand
             HoldFireKey = L.Bind(Config, sCtl, rCtl, "Fire only on order", "Огонь только по приказу", KeyCode.I,
                 "On the map: toggle 'fire only on order' for the selected own units — they don't shoot at anything until you give them a target (or an area)",
                 "На карте: переключить «огонь только по приказу» для выделенных своих юнитов — они ни по кому не стреляют, пока ты не укажешь цель (или область)");
+            StopKey = L.Bind(Config, sCtl, rCtl, "Stop", "Стоп", KeyCode.X,
+                "Selected own units stop where they are (routes are cleared)", "Выделенные свои юниты останавливаются на месте (маршрут сбрасывается)");
+            CeaseFireKey = L.Bind(Config, sCtl, rCtl, "Cease fire", "Прекратить огонь", KeyCode.N,
+                "Selected own units stop shooting: targets and area fire are cancelled and they switch to 'fire only on order'",
+                "Выделенные свои юниты прекращают огонь: цели и огонь по площади отменяются, включается «огонь только по приказу»");
             AreaFireKey = L.Bind(Config, sCtl, rCtl, "Fire at area", "Огонь по площади", KeyCode.Z,
                 "Selected units shell the area under the cursor (on the map) or at the camera's aim point, whether there is an enemy or not. [ ] — area radius",
                 "Выделенные юниты обстреливают область под курсором (на карте) или в точке прицела камеры — есть там враг или нет. [ ] — радиус области");
@@ -263,6 +272,9 @@ namespace FieldCommand
             SupplyTrucksAutonomous = L.Bind(Config, sBeh, rBeh, "Supply trucks work on their own", "Машины снабжения работают сами", true,
                 "Purchased supply trucks ignore hold position and drive to friendly units that need ammo, like in the base game",
                 "Купленные машины снабжения не держат позицию, а сами ездят к союзникам, которым нужны боеприпасы, как в обычной игре");
+            DriveOffRoad = L.Bind(Config, sBeh, rBeh, "Own units drive straight (off road)", "Свои юниты едут напрямую (не по дорогам)", true,
+                "Your move orders to your purchased ground units are driven straight across fields instead of along roads. Hold Alt while ordering to use the roads",
+                "Приказы на движение своим купленным наземным юнитам выполняются напрямую через поля, а не по дорогам. Зажми Alt при приказе — поедут по дорогам");
             EnemyMarkers = L.Bind(Config, sBeh, rBeh, "Command mode: enemy icons", "Режим командира: значки врагов", true,
                 "Show spotted enemies with the game's hostile icons in red while in command mode", "Показывать обнаруженных врагов игровыми значками красного цвета в режиме командира");
             MiddleMouseLook = L.Bind(Config, sBeh, rBeh, "Command mode: turn the camera with the middle mouse button", "Режим командира: поворот камеры средней кнопкой мыши", true,

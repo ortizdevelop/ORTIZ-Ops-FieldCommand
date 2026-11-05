@@ -472,7 +472,7 @@ namespace FieldCommand
             else
             {
                 purchased.Add(unit);
-                if (Plugin.SpawnHoldFire.Value && !selected.Playable) AreaFire.SetHold(unit, true);
+                if (placeHoldFire && !selected.Playable) AreaFire.SetHold(unit, true);
                 Toast(L.T($"Bought for you: {selected.Name} for {GameApi.Money(GameApi.TotalPrice(selected))}", $"Куплено себе: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))}"));
             }
             if (selected.Playable)
@@ -699,6 +699,18 @@ namespace FieldCommand
             bool hold = Input.GetKeyDown(Plugin.HoldKey.Value);
             bool attack = Input.GetKeyDown(Plugin.AttackKey.Value);
             bool defense = Input.GetKeyDown(Plugin.MissileDefenseKey.Value);
+            if (Input.GetKeyDown(Plugin.StopKey.Value) || Input.GetKeyDown(Plugin.CeaseFireKey.Value))
+            {
+                var ss = OrderSelection();
+                if (ss.Count == 0)
+                {
+                    Toast(L.T("Select your units", "Выдели свои юниты"));
+                    return;
+                }
+                if (Input.GetKeyDown(Plugin.StopKey.Value)) CmdStop(ss);
+                else CmdCeaseFire(ss);
+                return;
+            }
             if (Input.GetKeyDown(Plugin.HoldFireKey.Value))
             {
                 var hs = OrderSelection();
@@ -1071,7 +1083,7 @@ namespace FieldCommand
         private bool IsOverOwnGui(Vector3 mouse)
         {
             Vector2 gui = new Vector2(mouse.x, Screen.height - mouse.y);
-            return (commandMode && mode == PlaceMode.None && !DynamicMap.mapMaximized && CommandHudRect.Contains(gui)) || (mode != PlaceMode.None && HudRect.Contains(gui)) || (menuOpen && windowRect.Contains(gui)) || (menuOpen && draft != null && loadoutRect.Contains(gui));
+            return (commandMode && mode == PlaceMode.None && !DynamicMap.mapMaximized && (CommandHudRect.Contains(gui) || CommandBarRect.Contains(gui))) || (mode != PlaceMode.None && HudRect.Contains(gui)) || (menuOpen && windowRect.Contains(gui)) || (menuOpen && draft != null && loadoutRect.Contains(gui));
         }
 
         private int stylesFor = -1;
@@ -1172,7 +1184,8 @@ namespace FieldCommand
 
             if (toast != null && Time.unscaledTime < toastUntil)
             {
-                var r = new Rect(Screen.width * 0.5f - 250f, Screen.height - 120f, 500f, 32f);
+                float ty = commandMode && mode == PlaceMode.None && !DynamicMap.mapMaximized ? CommandBarRect.y - 42f : Screen.height - 120f;
+                var r = new Rect(Screen.width * 0.5f - 250f, ty, 500f, 32f);
                 GUI.Box(r, toast, Theme.Toast);
                 GUI.DrawTexture(new Rect(r.x, r.y, 3f, r.height), Theme.Tex(Theme.AccentColor));
             }
@@ -1197,7 +1210,15 @@ namespace FieldCommand
             GUILayout.EndHorizontal();
             if (!selected.Playable && strike == null)
             {
+                GUILayout.BeginHorizontal();
                 buyForFaction = Theme.Segmented(buyForFaction, L.T("For me", "Себе"), L.T("For the faction", "Фракции"), 120);
+                if (!buyForFaction)
+                {
+                    GUILayout.Space(16);
+                    placeHoldFire = Theme.Segmented(placeHoldFire, L.T("Fire at will", "Огонь: свободный"), L.T("Fire on order", "Огонь: по приказу"), 150);
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
             }
             GUILayout.EndArea();
         }
@@ -1439,6 +1460,28 @@ namespace FieldCommand
             GUI.color = old;
         }
 
+        private bool placeHoldFireInit;
+        private bool placeHoldFireValue;
+
+        /// <summary>Fire mode for the next units bought for yourself (starts from the config default).</summary>
+        private bool placeHoldFire
+        {
+            get
+            {
+                if (!placeHoldFireInit)
+                {
+                    placeHoldFireInit = true;
+                    placeHoldFireValue = Plugin.SpawnHoldFire.Value;
+                }
+                return placeHoldFireValue;
+            }
+            set
+            {
+                placeHoldFireInit = true;
+                placeHoldFireValue = value;
+            }
+        }
+
         private int groupFilter; // 0 = all
         private int lastTabForFilter = -1;
 
@@ -1497,6 +1540,11 @@ namespace FieldCommand
 
             GUILayout.BeginHorizontal();
             buyForFaction = Theme.Segmented(buyForFaction, L.T("For me", "Себе"), L.T("For the faction", "Фракции"), 130);
+            if (!buyForFaction)
+            {
+                GUILayout.Space(10);
+                placeHoldFire = Theme.Segmented(placeHoldFire, L.T("Fire at will", "Огонь: свободный"), L.T("Fire on order", "Огонь: по приказу"), 150);
+            }
             GUILayout.Space(10);
             GUILayout.Label(buyForFaction ? L.T("the AI decides where to go", "ИИ сам решает, куда ехать") : L.T("they hold and wait for my orders", "стоят на месте и ждут моих приказов"), Theme.RowLabel);
             GUILayout.FlexibleSpace();

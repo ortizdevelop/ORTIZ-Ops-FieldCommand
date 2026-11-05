@@ -25,6 +25,8 @@ namespace FieldCommand
             public float IssuedAt;
             /// <summary>Optional point slightly ahead of the last one: the unit rolls onto it to end up facing that way.</summary>
             public GlobalPosition? Face;
+            /// <summary>Which way the unit should face at the end (for the arrow on the route).</summary>
+            public Vector3? FacingDir;
         }
 
         private bool rmbHasPoint;
@@ -98,11 +100,53 @@ namespace FieldCommand
             return cmdSel.Where(u => u != null && !u.disabled && u is ICommandable).ToList();
         }
 
+        private bool mapWasOpen;
+        private float nextMapSelSync;
+
+        /// <summary>
+        /// One selection for the 3D view and the map: opening the map selects the command-mode units there
+        /// (so the game's own map orders and ours go to them), and what you select on the map comes back.
+        /// </summary>
+        private void SyncMapSelection()
+        {
+            bool open = DynamicMap.mapMaximized;
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null || !commandMode)
+            {
+                mapWasOpen = open;
+                return;
+            }
+            try
+            {
+                if (open && !mapWasOpen && cmdSel.Count > 0)
+                {
+                    map.DeselectAllIcons();
+                    foreach (var u in cmdSel) if (Selectable(u)) map.SelectIcon(u);
+                }
+                else if (open && Time.unscaledTime >= nextMapSelSync)
+                {
+                    nextMapSelSync = Time.unscaledTime + 0.2f;
+                    var mapSel = SelectedFriendlyCommandables().Where(u => purchased.Contains(u) && Selectable(u)).ToList();
+                    if (mapSel.Count > 0)
+                    {
+                        cmdSel.Clear();
+                        cmdSel.AddRange(mapSel);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning("[Commander] map selection: " + e.Message);
+            }
+            mapWasOpen = open;
+        }
+
         private static bool Selectable(Unit u) => u != null && !u.disabled && u is ICommandable && !(u is Aircraft);
 
         private void TickCommander()
         {
             FreeLook_Patch.CommandMode = CommandActive && Plugin.MiddleMouseLook.Value;
+            SyncMapSelection();
             cmdSel.RemoveAll(u => !Selectable(u) || !purchased.Contains(u));
             TickRoutes();
             pings.RemoveAll(p => Time.unscaledTime > p.Until);
@@ -117,6 +161,21 @@ namespace FieldCommand
             Vector2 mouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
             bool overGui = IsOverOwnGui(Input.mousePosition) || CommandHudRect.Contains(mouse) || GUIUtility.hotControl != 0;
 
+            overGui |= CommandBarRect.Contains(mouse);
+            // ---- "Attack" button: the next LMB on an enemy ----
+            if (attackPick)
+            {
+                if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(Plugin.StopKey.Value) || Input.GetKeyDown(KeyCode.Escape)) { attackPick = false; rmbDown = false; return; }
+                if (Input.GetMouseButtonDown(0) && !overGui)
+                {
+                    attackPick = false;
+                    Unit enemy = null;
+                    if (GameApi.TryGetLocal(out _, out var hqA)) enemy = FindTargetScreen(hqA, Input.mousePosition);
+                    if (enemy != null) AttackFromCommand(enemy);
+                    else Toast(L.T("No enemy under the cursor", "Под курсором нет врага"), 2f);
+                    return;
+                }
+            }
             // ---- selection ----
             if (Input.GetMouseButtonDown(0) && !overGui)
             {
@@ -266,8 +325,15 @@ namespace FieldCommand
                     rt = new Route();
                     routes[u] = rt;
                 }
+                if (facing.HasValue)
+                {
+                    // come in from behind the point along the arrow, so the unit stops already facing that way
+                    float lead = u is Ship ? 900f : 130f;
+                    rt.Points.Add(dest - facing.Value * lead);
+                }
                 rt.Points.Add(dest);
-                rt.Face = facing.HasValue ? dest + facing.Value * (u is Ship ? 400f : 60f) : (GlobalPosition?)null;
+                rt.Face = null;
+                rt.FacingDir = facing;
                 if (rt.Points.Count == 1)
                 {
                     GameApi.MoveTo(u, dest);
@@ -275,7 +341,7 @@ namespace FieldCommand
                 }
             }
             pings.Add(new Ping { P = target, Until = Time.unscaledTime + 1.5f, Waypoint = waypoint });
-            if (facing.HasValue) pings.Add(new Ping { P = target + facing.Value * 60f, Until = Time.unscaledTime + 1.5f, Waypoint = waypoint });
+
         }
 
         private static float ArriveRadius(Unit u) => u is Ship ? 300f : 40f;
@@ -371,7 +437,7 @@ namespace FieldCommand
             get
             {
                 float w = Mathf.Min(Screen.width - 20f, 1160f);
-                return new Rect(Screen.width * 0.5f - w * 0.5f, 8f, w, 80f);
+                return new Rect(Screen.width * 0.5f - w * 0.5f, 8f, w, 52f);
             }
         }
 
@@ -397,14 +463,38 @@ namespace FieldCommand
                 if (!ScreenOf(cam, u, out var prev)) continue;
                 bool sel = cmdSel.Contains(u);
                 Color c = sel ? SelColor : new Color(SelColor.r, SelColor.g, SelColor.b, 0.45f);
+                Vector2 before = prev;
+                bool ok = true;
+                GlobalPosition last = default;
                 foreach (var p in kv.Value.Points)
                 {
                     Vector3 sp = cam.WorldToScreenPoint(p.ToLocalPosition() + Vector3.up * 2f);
-                    if (sp.z <= 0f) break;
+                    if (sp.z <= 0f) { ok = false; break; }
                     Vector2 g = new Vector2(sp.x, Screen.height - sp.y);
                     RangeOverlay.Dashed(prev, g, c, 2f);
                     RangeOverlay.Disc(g, 5f, c);
+                    before = prev;
                     prev = g;
+                    last = p;
+                }
+                // arrow at the end: which way the unit will face
+                if (ok && kv.Value.Points.Count > 0)
+                {
+                    Vector2 dir;
+                    if (kv.Value.FacingDir.HasValue)
+                    {
+                        Vector3 tip3 = cam.WorldToScreenPoint(last.ToLocalPosition() + kv.Value.FacingDir.Value * 40f + Vector3.up * 2f);
+                        dir = tip3.z > 0f ? new Vector2(tip3.x, Screen.height - tip3.y) - prev : prev - before;
+                    }
+                    else dir = prev - before;
+                    if (dir.sqrMagnitude > 1f)
+                    {
+                        Vector2 n = dir.normalized, perp = new Vector2(-n.y, n.x);
+                        Vector2 tip = prev + n * 22f;
+                        RangeOverlay.Line(prev, tip, c, 3f);
+                        RangeOverlay.Line(tip, tip - n * 10f + perp * 7f, c, 3f);
+                        RangeOverlay.Line(tip, tip - n * 10f - perp * 7f, c, 3f);
+                    }
                 }
             }
             if (!commandMode) return;
@@ -490,7 +580,7 @@ namespace FieldCommand
             var r = CommandHudRect;
             GUI.Box(r, "", Theme.Toast);
             GUI.DrawTexture(new Rect(r.x, r.y, 3f, r.height), Theme.Tex(Theme.AccentColor));
-            GUILayout.BeginArea(new Rect(r.x + 12f, r.y + 6f, r.width - 20f, r.height - 8f));
+            GUILayout.BeginArea(new Rect(r.x + 12f, r.y + 8f, r.width - 20f, r.height - 10f));
             GUILayout.BeginHorizontal();
             GUILayout.Label($"ORTIZ <color=#{Theme.AccentHex}>OPS</color>", Theme.Logo, GUILayout.Width(120));
             int sec = menuOpen ? SectionOf(tab) : -1;
@@ -502,9 +592,92 @@ namespace FieldCommand
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(L.T("Exit ", "Выход ") + Plugin.MenuKey.Value, GUILayout.Width(110))) SetCommandMode(false);
             GUILayout.EndHorizontal();
-            GUILayout.Label(L.T($"LMB / drag — select · RMB — move (hold + drag — facing) · Shift+RMB — waypoint · RMB on enemy — attack · wheel held — turn camera · {Plugin.AttackKey.Value} fire from place · {Plugin.AreaFireKey.Value} strike area · {Plugin.HoldFireKey.Value} fire on order · {Plugin.HoldKey.Value} hold · {Plugin.PaidRearmKey.Value} rearm",
-                                $"ЛКМ / рамка — выделить · ПКМ — двигаться (зажать и потянуть — куда смотреть) · Shift+ПКМ — маршрут · ПКМ по врагу — атака · колесо — поворот камеры · {Plugin.AttackKey.Value} огонь с места · {Plugin.AreaFireKey.Value} область удара · {Plugin.HoldFireKey.Value} огонь по приказу · {Plugin.HoldKey.Value} держать · {Plugin.PaidRearmKey.Value} пополнить"), Theme.Small);
             GUILayout.EndArea();
+            DrawCommandBar();
+        }
+
+        private Rect CommandBarRect
+        {
+            get
+            {
+                float w = Mathf.Min(Screen.width - 20f, 1180f);
+                return new Rect(Screen.width * 0.5f - w * 0.5f, Screen.height - 92f, w, 82f);
+            }
+        }
+
+        private bool attackPick;
+
+        /// <summary>Bottom bar: order buttons (same as the hot keys) and the mouse / camera help.</summary>
+        private void DrawCommandBar()
+        {
+            var r = CommandBarRect;
+            GUI.Box(r, "", Theme.Toast);
+            GUI.DrawTexture(new Rect(r.x, r.y, 3f, r.height), Theme.Tex(Theme.AccentColor));
+            GUILayout.BeginArea(new Rect(r.x + 12f, r.y + 8f, r.width - 20f, r.height - 10f));
+            var sel = cmdSel.Where(Selectable).ToList();
+            bool any = sel.Count > 0;
+            GUILayout.BeginHorizontal();
+            GUI.enabled = any;
+            if (GUILayout.Button((attackPick ? "► " : "") + L.T("Attack", "Атака") + $"  [{Plugin.AttackKey.Value}]", attackPick ? Theme.Primary : GUI.skin.button, GUILayout.Width(118)))
+            {
+                attackPick = !attackPick;
+                if (attackPick) Toast(L.T("Click an enemy (LMB). RMB / X — cancel", "Кликни по врагу (ЛКМ). ПКМ / X — отмена"), 4f);
+            }
+            if (GUILayout.Button(L.T("Strike area", "Площадь") + $"  [{Plugin.AreaFireKey.Value}]", GUILayout.Width(118))) BeginAreaTargeting(sel, false);
+            if (GUILayout.Button(L.T("Stop!", "Стоп!") + $"  [{Plugin.StopKey.Value}]", GUILayout.Width(104))) CmdStop(sel);
+            if (GUILayout.Button(L.T("Cease fire", "Прекратить огонь") + $"  [{Plugin.CeaseFireKey.Value}]", GUILayout.Width(176))) CmdCeaseFire(sel);
+            bool hf = any && sel.All(u => AreaFire.HoldFire.Contains(u));
+            if (GUILayout.Button((hf ? L.T("Fire: on order", "Огонь: по приказу") : L.T("Fire: at will", "Огонь: свободный")) + $"  [{Plugin.HoldFireKey.Value}]", hf ? Theme.Primary : GUI.skin.button, GUILayout.Width(190)))
+            {
+                foreach (var u in sel) AreaFire.SetHold(u, !hf);
+            }
+            bool hold = any && sel.All(GameApi.GetHold);
+            if (GUILayout.Button(L.T("Hold", "Держать") + $"  [{Plugin.HoldKey.Value}]", hold ? Theme.Primary : GUI.skin.button, GUILayout.Width(112)))
+            {
+                foreach (var u in sel)
+                {
+                    attackOrders.Remove(u);
+                    GameApi.SetHold(u, !hold);
+                    if (!hold) { routes.Remove(u); GameApi.Stop(u); }
+                }
+            }
+            bool abm = any && sel.All(u => FocusFire.MissileDefense.Contains(u));
+            if (GUILayout.Button(L.T("ABM", "ПРО") + $"  [{Plugin.MissileDefenseKey.Value}]", abm ? Theme.Primary : GUI.skin.button, GUILayout.Width(84)))
+            {
+                foreach (var u in sel) { if (abm) FocusFire.MissileDefense.Remove(u); else FocusFire.MissileDefense.Add(u); }
+            }
+            if (GUILayout.Button(L.T("Rearm", "Пополнить") + $"  [{Plugin.PaidRearmKey.Value}]", GUILayout.Width(126))) RearmUnits(sel);
+            GUI.enabled = true;
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUILayout.Space(4);
+            GUILayout.Label(L.T("LMB / drag — select · RMB — move (hold and drag — facing) · Shift+RMB — waypoint · Alt — use roads · RMB on an enemy — attack · mouse wheel held — turn the camera · WASD — move the camera",
+                                "ЛКМ / рамка — выделить · ПКМ — двигаться (зажать и потянуть — разворот) · Shift+ПКМ — маршрут · Alt — по дорогам · ПКМ по врагу — атака · зажатое колесо — поворот камеры · WASD — движение камеры"), Theme.Small);
+            GUILayout.EndArea();
+        }
+
+        private void CmdStop(List<Unit> sel)
+        {
+            foreach (var u in sel)
+            {
+                routes.Remove(u);
+                attackOrders.Remove(u);
+                GameApi.Stop(u);
+            }
+            Toast(L.T($"Stop: {sel.Count}", $"Стоп: {sel.Count}"), 2f);
+        }
+
+        private void CmdCeaseFire(List<Unit> sel)
+        {
+            foreach (var u in sel)
+            {
+                FocusFire.Clear(u);
+                FocusFire.MissileDefense.Remove(u);
+                AreaFire.Cancel(u);
+                attackOrders.Remove(u);
+                AreaFire.SetHold(u, true);
+            }
+            Toast(L.T($"Cease fire: {sel.Count} — fire only on order ({Plugin.HoldFireKey.Value} — fire at will again)", $"Прекратить огонь: {sel.Count} — огонь только по приказу ({Plugin.HoldFireKey.Value} — снова свободный огонь)"), 4f);
         }
 
         private static void Brackets(Rect r, Color c)
