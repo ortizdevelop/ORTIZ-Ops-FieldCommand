@@ -1,4 +1,7 @@
 # Changelog
+## 0.17.0
+- **F6 is now command mode**: a bar at the top with **Purchase / supply**, **Units** and **Stratagems** — a click opens the panel, another click collapses it. Selecting units with the mouse, moving them, waypoints and all order keys work right away, outside the panels too. The separate Shift+F6 mode is gone.
+- Your units' icons are shown all the time in command mode (with Shift+F6 they were missing).
 ## 0.16.0
 - **Command mode** (**Shift+F6** or the *Command mode* button in the menu): the purchase menu closes and you command your purchased units right in the 3D view, like in an RTS. **LMB** — select a unit, **drag** — box select (**Shift** — add / remove), **RMB** — move (in formation), **Ctrl+RMB** — add a waypoint. Routes and order points are drawn in 3D and on the map; selected units get green brackets and their weapon reach ring. All order keys work on this selection: **K** attack the enemy under the cursor, **Z** fire at area (the circle is shown in 3D), **I** fire only on order, **H** hold, **L** missile defence, **Y** rearm, **Delete** scrap. **F6** — back to the menu, **Shift+F6** or *Exit* — leave. Only units you bought for yourself can be selected.
 ## 0.15.0

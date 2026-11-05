@@ -42,7 +42,7 @@ Spend your money on **ground units, warships, static air defence and supply depo
 | 🏳️ **Faction-locked** | BDF buys only BDF equipment, PALA only PALA. Ownership is learned from the game's own missions and convoys; manual overrides in config. |
 | 👤 **For yourself or for the faction** | *For me*: units hold position and wait for your orders. *For faction*: the AI decides where they go. Separate limits (60 each by default, up to 150) — set them with sliders right in the purchase menu. |
 | 🎯 **RTS orders on the map** | Move, waypoints, hold, focus fire from current position, advance to firing range, automatic missile defence, paid rearm on the spot, scrap with refund. |
-| 🎮 **Command mode** | Close the menu and command your units right in the 3D view like in an RTS: box select, move in formation, Ctrl+RMB waypoints, all order keys. |
+| 🎮 **Command mode (F6)** | F6 turns on command mode: a top menu (*Purchase / supply*, *Units*, *Stratagems*) and RTS control of your units right in the 3D view — box select, move in formation, Ctrl+RMB waypoints, all order keys. |
 | 🔇 **Fire only on order** | Units in this mode don't shoot at anything by themselves — only at the target or area you give them. |
 | 💥 **Fire at area** | Artillery, guns, rocket launchers and ships shell a circle you mark on the map or with the camera — whether there is an enemy there or not. |
 | 📡 **Weapon range on the map** | Select your units and their firing range is drawn around them. Point at an enemy — green lines show who will fire, red ones who can't reach (and how much is missing). |
@@ -59,8 +59,7 @@ All keys can be rebound in the Configuration Manager (F1).
 ### General
 | Key | Action |
 |---|---|
-| **F6** | Open / close the purchase menu |
-| **Shift+F6** | Command mode on / off (also the *Command mode* button in the menu) |
+| **F6** | Command mode on / off (top menu + unit control) |
 | **J** | Get out of the current KAR / BOTE vehicle (it stays where it is) |
 
 ### Placing units and targeting stratagems
@@ -82,7 +81,7 @@ All keys can be rebound in the Configuration Manager (F1).
 | **RMB** | Move the selection there, in formation |
 | **Ctrl+RMB** | Add a waypoint (units drive the points one after another) |
 | **K / Z / I / H / L / Y / Delete** | Same orders as on the map, for the selected units (K — enemy under the cursor) |
-| **F6** / **Shift+F6** | Back to the menu / leave command mode |
+| **F6** | Leave command mode (during placement — cancel and return to it) |
 
 ### Orders on the map (select your units first)
 | Key | Action |
@@ -100,7 +99,7 @@ All keys can be rebound in the Configuration Manager (F1).
 
 ## Purchase menu
 
-The menu (F6) has a flat dark design with a side menu of tabs; at the bottom of the side menu are your budget, faction and the money earned from kills. The accent colour (orange / cyan / lime) is set in F1 → *0. Interface*. At the top are the *For me / For the faction* switch and two sliders (with −10 / − / + / +10 buttons) for **your unit limit** and the **faction unit limit**, 1–150 each. Tabs:
+**F6** opens command mode with a bar at the top: **Purchase / supply** (ground, naval, defences / depots, playable), **Units** (everything you bought) and **Stratagems**. Clicking a section opens its panel, clicking it again collapses it — you keep selecting and ordering units outside the panel. The panel has a flat dark design with a side menu of sub-tabs; at the bottom of the side menu are your budget, faction and the money earned from kills. The accent colour (orange / cyan / lime) is set in F1 → *0. Interface*. At the top are the *For me / For the faction* switch and two sliders (with −10 / − / + / +10 buttons) for **your unit limit** and the **faction unit limit**, 1–150 each. Tabs:
 
 - **Ground** — AA, radars, artillery, tanks, IFVs, logistics… grouped by category.
 - **Naval** — carriers, LHAs, cruisers, destroyers, frigates, corvettes, support ships.
@@ -118,7 +117,7 @@ With the camera you place with the **mouse**: point and click LMB (or G). When t
 - In command mode (menu open or placing) the game's own outlined unit icon is drawn above each of your units in the 3D view, tinted in your colour; faction-bought units — in soft green. *Markers above my units*: CommandMode / Always / Off.
 
 ### Command mode
-Press **Shift+F6** or *Command mode* in the side menu: the menu closes, the cursor stays and you control **only the units you bought for yourself** in the 3D view. Selected units get green brackets and (for up to 6) a ring of their weapon reach. **RMB** sends them in a grid formation facing the direction of travel; **Ctrl+RMB** queues waypoints — routes are drawn as dashed lines in 3D and on the map and disappear when a unit gets another order. Every order key works on the selection, so you can mark strike areas with **Z** right from the camera. A panel at the top shows the selection and has *Menu* / *Exit* buttons.
+Press **F6**: the cursor stays and you control **only the units you bought for yourself** in the 3D view — with the panels collapsed or outside them. Your units always show their icons in your colour in this mode. Selected units get green brackets and (for up to 6) a ring of their weapon reach. **RMB** sends them in a grid formation facing the direction of travel; **Ctrl+RMB** queues waypoints — routes are drawn as dashed lines in 3D and on the map and disappear when a unit gets another order. Every order key works on the selection, so you can mark strike areas with **Z** right from the camera. The top bar shows the sections, the selection, your budget and *Exit*.
 
 ### Fire only on order and fire at area
 - **Fire only on order** — **I** on the map or the *Fire: on order / Fire: free* button in the *Mine* tab. Such units ignore enemies until you order: a target (**K**), an area (**Z**) or missile defence (**L**). *New units: fire only on order* in F1 → *4. Behaviour* puts every new purchase in this mode.
@@ -228,7 +227,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 - 🏳️ **Только своя фракция** — BDF покупает технику BDF, PALA — PALA. Ручная привязка в настройках.
 - 👤 **Себе или фракции** — «себе»: стоят на месте и ждут приказов; «фракции»: ими управляет ИИ. Отдельные лимиты (по 60, максимум 150) — меняются ползунками прямо в меню покупки.
 - 🎯 **Приказы на карте** — движение, маршрут, держать позицию, огонь с места, выдвижение на дистанцию огня, перехват ракет, платное пополнение на месте, списание с возвратом денег.
-- 🎮 **Режим командира** — закрываешь меню и командуешь своими юнитами прямо в 3D как в RTS: рамка, движение строем, маршрут через Ctrl+ПКМ, все клавиши приказов.
+- 🎮 **Режим командира (F6)** — верхнее меню («Покупка / снабжение», «Юниты», «Стратегемы») и управление своими юнитами прямо в 3D как в RTS: рамка, движение строем, маршрут через Ctrl+ПКМ, все клавиши приказов.
 - 🔇 **Огонь только по приказу** — юниты в этом режиме сами ни по кому не стреляют, только по цели или области, которую ты укажешь.
 - 💥 **Огонь по площади** — артиллерия, орудия, РСЗО и корабли обстреливают круг, указанный на карте или камерой, — есть там враг или нет.
 - 📡 **Дальность огня на карте** — выдели свои юниты, и вокруг них видна зона поражения. Наведи на врага: зелёные линии — кто откроет огонь, красные — кто не достаёт (и сколько не хватает).
@@ -241,8 +240,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 ### Управление
 | Клавиша | Действие |
 |---|---|
-| **F6** | Меню покупки |
-| **Shift+F6** | Режим командира вкл/выкл (или кнопка «Командовать» в меню) |
+| **F6** | Режим командира вкл/выкл (верхнее меню + управление юнитами) |
 | **ЛКМ** / рамка (режим командира) | Выделить свои юниты; **Shift** — добавить/убрать |
 | **ПКМ** / **Ctrl+ПКМ** (режим командира) | Двигаться строем / добавить точку маршрута |
 | **J** | Выйти из техники KAR / BOTE |
@@ -264,11 +262,12 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **Delete** | Списать выделенных купленных юнитов с возвратом 50 % |
 
 ### Меню (F6)
+**F6** включает режим командира: сверху полоса с разделами **«Покупка / снабжение»** (наземка, флот, оборона/склады, играбельная), **«Юниты»** (всё купленное) и **«Стратегемы»**. Клик по разделу открывает его панель, повторный — сворачивает; вне панели можно выделять юниты и отдавать приказы.
 Окно в тёмном «плоском» стиле с боковым меню вкладок; внизу меню — бюджет, фракция и заработок. Акцентный цвет (оранжевый / бирюзовый / лаймовый) — F1 → *0. Interface*. Своя купленная техника выделяется своим цветом на карте и метках (по умолчанию оранжевый, *My units colour*); в режиме командира над ней в 3D рисуется родной значок игры (*Markers above my units*: CommandMode / Always / Off), над купленным для фракции — мягким зелёным. Камерой юниты ставятся **мышкой**: навёл и ЛКМ (или G). Если другой мод (например, Ground Control RTS) меняет цены, техника и флот продаются по исходным ценам игры. Вверху — переключатель «Себе / Фракции» и ползунки **лимита своих юнитов** и **лимита юнитов фракции** (1–150, кнопки −10 / − / + / +10).
 Вкладки: **Наземная**, **Флот**, **Оборона/склады** (морские контейнеры — на воду), **Играбельная** (выбор модулей → покупка → появляешься внутри), **Мои** (список купленного: держать/отпустить, стоп, ПРО, на карте, сесть, **платное пополнение боезапаса** на месте — «Пополнить $X», «Пополнить всех», на карте клавиша **Y**), **Стратегемы**. Окно растягивается за правый нижний угол.
 
 ### Режим командира
-**Shift+F6** или кнопка «Командовать» в боковом меню: меню закрывается, курсор остаётся, и ты управляешь **только юнитами, купленными себе**, прямо в 3D. Выделенные отмечены зелёными уголками и (до 6 штук) кольцом дальности оружия. **ПКМ** — двигаться строем в сторону движения, **Ctrl+ПКМ** — добавить точку маршрута; маршруты видны пунктиром в 3D и на карте и сбрасываются, если юнит получил другой приказ. Все клавиши приказов (K, Z, I, H, L, Y, Delete) работают на выделенных — например, область удара можно указать **Z** прямо с камеры. Вверху панель с числом выделенных и кнопками «Меню» / «Выход». **F6** — вернуться в меню.
+**F6**: курсор остаётся, и ты управляешь **только юнитами, купленными себе**, прямо в 3D — при свёрнутых панелях или вне их. В этом режиме у своих юнитов всегда видны их значки твоего цвета. Выделенные отмечены зелёными уголками и (до 6 штук) кольцом дальности оружия. **ПКМ** — двигаться строем в сторону движения, **Ctrl+ПКМ** — добавить точку маршрута; маршруты видны пунктиром в 3D и на карте и сбрасываются, если юнит получил другой приказ. Все клавиши приказов (K, Z, I, H, L, Y, Delete) работают на выделенных — например, область удара можно указать **Z** прямо с камеры. Вверху — разделы меню, число выделенных, бюджет и «Выход». **F6** — выйти из режима.
 
 ### Огонь по приказу и по площади
 **Огонь только по приказу** — клавиша **I** на карте или кнопка «Огонь: приказ / сам» во вкладке «Мои». Такие юниты не стреляют, пока ты не дашь цель (**K**), область (**Z**) или не включишь перехват ракет (**L**). Настройка *New units: fire only on order* сразу включает режим для всех новых покупок.
