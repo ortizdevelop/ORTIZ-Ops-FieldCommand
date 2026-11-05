@@ -36,23 +36,40 @@ namespace FieldCommand
 
         private readonly List<Ping> pings = new List<Ping>();
 
-        private bool CommandActive => commandMode && !menuOpen && mode == PlaceMode.None && !DynamicMap.mapMaximized && GameApi.InMission();
+        /// <summary>Selecting and ordering with the mouse in the 3D view (also with a panel open — outside it).</summary>
+        private bool CommandActive => commandMode && mode == PlaceMode.None && !DynamicMap.mapMaximized && GameApi.InMission();
 
         private void SetCommandMode(bool on)
         {
             commandMode = on;
             boxDragging = false;
             rmbDown = false;
-            if (on)
+            if (!on)
             {
-                if (mode != PlaceMode.None) ExitPlacement();
-                Toast(L.T($"Command mode: LMB / drag — select your units, RMB — move, Ctrl+RMB — waypoint. {Plugin.MenuKey.Value} — menu, {Plugin.CommandKey.Value} — exit",
-                          $"Режим командира: ЛКМ / рамка — выделить свои юниты, ПКМ — двигаться, Ctrl+ПКМ — точка маршрута. {Plugin.MenuKey.Value} — меню, {Plugin.CommandKey.Value} — выход"), 6f);
+                menuOpen = false;
+                areaTargeting = false;
             }
-            else
+            else if (mode != PlaceMode.None)
             {
-                Toast(L.T("Command mode off", "Режим командира выключен"), 2f);
+                ExitPlacement();
             }
+        }
+
+        /// <summary>Top menu sections: 0 — purchase / supply, 1 — units, 2 — stratagems.</summary>
+        private static int SectionOf(int tabIndex) => tabIndex <= 3 ? 0 : tabIndex == 4 ? 1 : 2;
+
+        private void OpenSection(int sec)
+        {
+            if (menuOpen && SectionOf(tab) == sec)
+            {
+                menuOpen = false; // second click collapses the panel
+                return;
+            }
+            if (sec == 0 && SectionOf(tab) != 0) tab = 0;
+            if (sec == 1) tab = 4;
+            if (sec == 2) tab = 5;
+            menuOpen = true;
+            if (catalog == null || Time.time - catalogBuiltAt > 30f) RebuildCatalog();
         }
 
         private void ResetCommander()
@@ -76,15 +93,6 @@ namespace FieldCommand
 
         private void TickCommander()
         {
-            if (Plugin.CommandKey.Value.IsDown())
-            {
-                if (commandMode && !menuOpen) SetCommandMode(false);
-                else
-                {
-                    menuOpen = false;
-                    SetCommandMode(true);
-                }
-            }
             cmdSel.RemoveAll(u => !Selectable(u) || !purchased.Contains(u));
             TickRoutes();
             pings.RemoveAll(p => Time.unscaledTime > p.Until);
@@ -311,7 +319,7 @@ namespace FieldCommand
         // ---------- drawing ----------
 
         private static readonly Color SelColor = new Color(0.45f, 1f, 0.45f, 1f);
-        private Rect CommandHudRect => new Rect(Screen.width * 0.5f - 330f, 10f, 660f, 56f);
+        private Rect CommandHudRect => new Rect(Screen.width * 0.5f - 470f, 8f, 940f, 64f);
 
         private void DrawCommander()
         {
@@ -320,7 +328,7 @@ namespace FieldCommand
                 if (DynamicMap.mapMaximized) DrawRoutesOnMap();
                 else if (commandMode || routes.Count > 0) DrawCommander3D();
             }
-            if (CommandActive) DrawCommandHud();
+            if (commandMode && mode == PlaceMode.None && !DynamicMap.mapMaximized && GameApi.InMission()) DrawCommandHud();
         }
 
         private void DrawCommander3D()
@@ -408,15 +416,20 @@ namespace FieldCommand
             var r = CommandHudRect;
             GUI.Box(r, "", Theme.Toast);
             GUI.DrawTexture(new Rect(r.x, r.y, 3f, r.height), Theme.Tex(Theme.AccentColor));
-            GUILayout.BeginArea(new Rect(r.x + 12f, r.y + 6f, r.width - 20f, r.height - 10f));
+            GUILayout.BeginArea(new Rect(r.x + 12f, r.y + 6f, r.width - 20f, r.height - 8f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label(L.T($"COMMAND MODE — selected: {cmdSel.Count}", $"РЕЖИМ КОМАНДИРА — выделено: {cmdSel.Count}"), Theme.Header);
+            GUILayout.Label($"ORTIZ <color=#{Theme.AccentHex}>OPS</color>", Theme.Logo, GUILayout.Width(120));
+            int sec = menuOpen ? SectionOf(tab) : -1;
+            if (GUILayout.Button(L.T("Purchase / supply", "Покупка / снабжение"), sec == 0 ? Theme.SegOn : Theme.Seg, GUILayout.Width(190))) OpenSection(0);
+            if (GUILayout.Button(L.T($"Units ({purchased.Count})", $"Юниты ({purchased.Count})"), sec == 1 ? Theme.SegOn : Theme.Seg, GUILayout.Width(130))) OpenSection(1);
+            if (GUILayout.Button(L.T("Stratagems", "Стратегемы"), sec == 2 ? Theme.SegOn : Theme.Seg, GUILayout.Width(130))) OpenSection(2);
+            GUILayout.Space(12);
+            GUILayout.Label(L.T($"Selected: {cmdSel.Count}", $"Выделено: {cmdSel.Count}") + "   " + GameApi.Money(GameApi.GetFunds()), Theme.RowLabel);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(L.T("Menu", "Меню"), GUILayout.Width(80))) menuOpen = true;
-            if (GUILayout.Button(L.T("Exit", "Выход"), GUILayout.Width(80))) SetCommandMode(false);
+            if (GUILayout.Button(L.T("Exit ", "Выход ") + Plugin.MenuKey.Value, GUILayout.Width(110))) SetCommandMode(false);
             GUILayout.EndHorizontal();
-            GUILayout.Label(L.T($"LMB / drag — select · RMB — move · Ctrl+RMB — waypoint · {Plugin.AttackKey.Value} attack · {Plugin.AreaFireKey.Value} area · {Plugin.HoldFireKey.Value} fire on order · {Plugin.HoldKey.Value} hold",
-                                $"ЛКМ / рамка — выделить · ПКМ — двигаться · Ctrl+ПКМ — маршрут · {Plugin.AttackKey.Value} атака · {Plugin.AreaFireKey.Value} площадь · {Plugin.HoldFireKey.Value} огонь по приказу · {Plugin.HoldKey.Value} держать"), Theme.Small);
+            GUILayout.Label(L.T($"LMB / drag — select your units · RMB — move · Ctrl+RMB — waypoint · {Plugin.AttackKey.Value} attack · {Plugin.AreaFireKey.Value} strike area · {Plugin.HoldFireKey.Value} fire on order · {Plugin.HoldKey.Value} hold · {Plugin.PaidRearmKey.Value} rearm",
+                                $"ЛКМ / рамка — выделить свои юниты · ПКМ — двигаться · Ctrl+ПКМ — маршрут · {Plugin.AttackKey.Value} атака · {Plugin.AreaFireKey.Value} область удара · {Plugin.HoldFireKey.Value} огонь по приказу · {Plugin.HoldKey.Value} держать · {Plugin.PaidRearmKey.Value} пополнить"), Theme.Small);
             GUILayout.EndArea();
         }
 

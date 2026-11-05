@@ -137,12 +137,12 @@ namespace FieldCommand
             {
                 if (mode != PlaceMode.None)
                 {
-                    ExitPlacement();
+                    ExitPlacement(); // back to command mode
+                    commandMode = true;
                 }
-                menuOpen = !menuOpen;
-                if (menuOpen && (catalog == null || Time.time - catalogBuiltAt > 30f))
+                else
                 {
-                    RebuildCatalog();
+                    SetCommandMode(!commandMode);
                 }
             }
 
@@ -183,7 +183,7 @@ namespace FieldCommand
             {
                 TickAreaTargeting();
             }
-            else if (mode == PlaceMode.None && CommandActive)
+            else if (mode == PlaceMode.None && CommandActive && GUIUtility.keyboardControl == 0)
             {
                 if (cmdSel.Count > 0) { lastSelection.Clear(); lastSelection.AddRange(cmdSel); }
                 TickMapOrders();
@@ -1065,7 +1065,7 @@ namespace FieldCommand
         private bool IsOverOwnGui(Vector3 mouse)
         {
             Vector2 gui = new Vector2(mouse.x, Screen.height - mouse.y);
-            return (CommandActive && CommandHudRect.Contains(gui)) || (mode != PlaceMode.None && HudRect.Contains(gui)) || (menuOpen && windowRect.Contains(gui)) || (menuOpen && draft != null && loadoutRect.Contains(gui));
+            return (commandMode && mode == PlaceMode.None && !DynamicMap.mapMaximized && CommandHudRect.Contains(gui)) || (mode != PlaceMode.None && HudRect.Contains(gui)) || (menuOpen && windowRect.Contains(gui)) || (menuOpen && draft != null && loadoutRect.Contains(gui));
         }
 
         private int stylesFor = -1;
@@ -1101,7 +1101,7 @@ namespace FieldCommand
             Theme.Apply();
             EnsureStyles();
 
-            if (CommandMarkers.ShouldDraw(menuOpen || mode != PlaceMode.None))
+            if (CommandMarkers.ShouldDraw(menuOpen || commandMode || mode != PlaceMode.None))
             {
                 CommandMarkers.Draw(GetCamera(), purchased, factionBought);
             }
@@ -1142,6 +1142,7 @@ namespace FieldCommand
                 }
                 windowRect.width = Mathf.Clamp(windowRect.width, MinWindowW, Mathf.Max(MinWindowW, Screen.width - 20f));
                 windowRect.height = Mathf.Clamp(windowRect.height, 520f, Mathf.Max(520f, Screen.height - 20f));
+                if (commandMode && windowRect.y < CommandHudRect.yMax + 6f) windowRect.y = CommandHudRect.yMax + 6f;
                 windowRect = GUILayout.Window(0x46434D, windowRect, DrawWindow, "", Theme.Window, GUILayout.Width(windowRect.width), GUILayout.Height(windowRect.height));
                 if (draft != null)
                 {
@@ -1442,19 +1443,12 @@ namespace FieldCommand
             GUILayout.BeginVertical(Theme.Sidebar, GUILayout.Width(190), GUILayout.ExpandHeight(true));
             GUILayout.Label($"ORTIZ <color=#{Theme.AccentHex}>OPS</color>", Theme.Logo);
             GUILayout.Label("FIELDCOMMAND", sideCapsBigStyle);
+            int sec = SectionOf(tab);
             for (int i = 0; i < tabs.Length; i++)
             {
+                if (SectionOf(i) != sec) continue;
                 if (Theme.SideButton(tabs[i], tab == i)) tab = i;
             }
-            GUILayout.Space(10);
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(14);
-            if (GUILayout.Button(L.T("Command mode", "Командовать"), Theme.Primary, GUILayout.Width(160)))
-            {
-                menuOpen = false;
-                SetCommandMode(true);
-            }
-            GUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
             string fundsKind = Plugin.Funds.Value == FundsSource.Player ? L.T("PERSONAL", "ЛИЧНЫЙ") : L.T("FACTION", "ФРАКЦИИ");
             GUILayout.Label(L.T("BALANCE · ", "БАЛАНС · ") + fundsKind, sideCapsStyle);
@@ -1472,7 +1466,7 @@ namespace FieldCommand
             {
                 L.Language.Value = L.Ru ? UiLanguage.English : UiLanguage.Russian;
             }
-            if (GUILayout.Button(L.T("Close ", "Закрыть ") + Plugin.MenuKey.Value))
+            if (GUILayout.Button(L.T("Collapse", "Свернуть")))
             {
                 menuOpen = false;
             }
@@ -1786,6 +1780,7 @@ namespace FieldCommand
                 if (GUILayout.Button(L.T("Get out (vehicle stays)", "Выйти (техника останется)"), GUILayout.Width(220)))
                 {
                     menuOpen = false;
+                    commandMode = false;
                     crew.Leave();
                 }
                 GUI.enabled = true;
@@ -1829,6 +1824,7 @@ namespace FieldCommand
                     if (GUILayout.Button(L.T("Get in", "Сесть"), Theme.Primary, GUILayout.Width(96)))
                     {
                         menuOpen = false;
+                        commandMode = false;
                         crew.Enter(a);
                     }
                     GUI.enabled = true;
