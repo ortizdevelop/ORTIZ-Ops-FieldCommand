@@ -265,7 +265,7 @@ namespace FieldCommand
                     canReach > 0 ? new Color(1f, 0.85f, 0.6f) : new Color(1f, 0.5f, 0.45f));
         }
 
-        private static void Ring(Camera cam, GlobalPosition c, float r, Color col, bool dashed)
+        public static void Ring(Camera cam, GlobalPosition c, float r, Color col, bool dashed)
         {
             Vector3 center = c.ToLocalPosition();
             const int n = 48;

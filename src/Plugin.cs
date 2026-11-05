@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.15.0";
+        public const string Version = "0.16.0";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -38,6 +38,7 @@ namespace FieldCommand
         internal static ConfigEntry<KeyboardShortcut> LeaveKey;
         internal static ConfigEntry<KeyCode> MissileDefenseKey;
         internal static ConfigEntry<KeyCode> HoldFireKey;
+        internal static ConfigEntry<KeyboardShortcut> CommandKey;
         internal static ConfigEntry<KeyCode> AreaFireKey;
         internal static ConfigEntry<bool> SpawnHoldFire;
         internal static ConfigEntry<float> AreaRadius;
@@ -136,6 +137,9 @@ namespace FieldCommand
 
             MenuKey = L.Bind(Config, sCtl, rCtl, "Purchase menu", "Меню покупки", new KeyboardShortcut(KeyCode.F6),
                 "Open / close the purchase menu", "Открыть/закрыть меню покупки юнитов");
+            CommandKey = L.Bind(Config, sCtl, rCtl, "Command mode", "Режим командира", new KeyboardShortcut(KeyCode.F6, KeyCode.LeftShift),
+                "Toggle command mode: the menu closes, LMB / drag selects your purchased units in the 3D view, RMB — move, Ctrl+RMB — waypoint, order keys work on the selection",
+                "Режим командира: меню закрывается, ЛКМ / рамкой выделяешь свои купленные юниты прямо в 3D, ПКМ — двигаться, Ctrl+ПКМ — точка маршрута, клавиши приказов работают на выделенных");
             RotateKey = L.Bind(Config, sCtl, rCtl, "Rotate", "Повернуть", KeyCode.R,
                 "Rotate the unit clockwise while placing it: tap — one step, hold — keeps turning", "Повернуть юнит по часовой при расстановке: нажатие — на шаг, зажать — крутится сам");
             RotateBackKey = L.Bind(Config, sCtl, rCtl, "Rotate back", "Повернуть обратно", KeyCode.Q,

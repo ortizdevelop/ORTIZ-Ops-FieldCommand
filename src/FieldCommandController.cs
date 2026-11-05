@@ -13,7 +13,7 @@ namespace FieldCommand
         Camera
     }
 
-    internal class FieldCommandController : MonoBehaviour
+    internal partial class FieldCommandController : MonoBehaviour
     {
         // ---- state ----
         private bool menuOpen;
@@ -110,6 +110,7 @@ namespace FieldCommand
                     AreaFire.HoldFire.Clear();
                     AreaFire.Missiles.Clear();
                     lastSelection.Clear();
+                    ResetCommander();
                     catalog = null;
                 }
                 return;
@@ -156,7 +157,7 @@ namespace FieldCommand
 
             // the mouse is needed in the menu and while placing with the camera (aim with the mouse, LMB to place);
             // afterwards the game gets its own cursor state back
-            if (menuOpen || ((mode == PlaceMode.Camera || (areaTargeting && !areaOnMap)) && !DynamicMap.mapMaximized))
+            if (menuOpen || ((mode == PlaceMode.Camera || (areaTargeting && !areaOnMap) || CommandActive) && !DynamicMap.mapMaximized))
             {
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
@@ -177,9 +178,15 @@ namespace FieldCommand
                     break;
             }
 
+            TickCommander();
             if (areaTargeting)
             {
                 TickAreaTargeting();
+            }
+            else if (mode == PlaceMode.None && CommandActive)
+            {
+                if (cmdSel.Count > 0) { lastSelection.Clear(); lastSelection.AddRange(cmdSel); }
+                TickMapOrders();
             }
             else if (mode == PlaceMode.None && DynamicMap.mapMaximized)
             {
@@ -694,7 +701,7 @@ namespace FieldCommand
             bool defense = Input.GetKeyDown(Plugin.MissileDefenseKey.Value);
             if (Input.GetKeyDown(Plugin.HoldFireKey.Value))
             {
-                var hs = SelectedFriendlyCommandables();
+                var hs = OrderSelection();
                 if (hs.Count == 0)
                 {
                     Toast(L.T("Select your units on the map", "Выдели свои юниты на карте"));
@@ -708,12 +715,12 @@ namespace FieldCommand
             }
             if (Input.GetKeyDown(Plugin.AreaFireKey.Value))
             {
-                BeginAreaTargeting(SelectedFriendlyCommandables(), true);
+                BeginAreaTargeting(OrderSelection(), DynamicMap.mapMaximized);
                 return;
             }
             if (Input.GetKeyDown(Plugin.PaidRearmKey.Value))
             {
-                var mineSel = SelectedFriendlyCommandables().Where(u => purchased.Contains(u) || factionBought.Contains(u)).ToList();
+                var mineSel = OrderSelection().Where(u => purchased.Contains(u) || factionBought.Contains(u)).ToList();
                 if (mineSel.Count == 0)
                 {
                     Toast(L.T("Select your purchased units on the map", "Выдели на карте своих купленных юнитов"));
@@ -724,7 +731,7 @@ namespace FieldCommand
             }
             if (Input.GetKeyDown(Plugin.ScrapKey.Value))
             {
-                var mineSel = SelectedFriendlyCommandables().Where(u => purchased.Contains(u) || factionBought.Contains(u)).ToList();
+                var mineSel = OrderSelection().Where(u => purchased.Contains(u) || factionBought.Contains(u)).ToList();
                 if (mineSel.Count == 0)
                 {
                     Toast(L.T("Select your purchased units on the map", "Выдели на карте своих купленных юнитов"));
@@ -740,14 +747,14 @@ namespace FieldCommand
                 // a vanilla right-click move order cancels "approach the target", but not the fire order
                 if (Input.GetMouseButtonDown(1))
                 {
-                    foreach (var u in SelectedFriendlyCommandables())
+                    foreach (var u in OrderSelection())
                     {
                         attackOrders.Remove(u);
                     }
                 }
                 return;
             }
-            var sel = SelectedFriendlyCommandables();
+            var sel = OrderSelection();
             if (sel.Count == 0)
             {
                 Toast(L.T("Select your units on the map", "Выдели свои юниты на карте"));
@@ -780,21 +787,27 @@ namespace FieldCommand
                 Toast(on ? L.T($"Missile defence ON: {sel.Count} (nuclear and ballistic first)", $"Перехват ракет ВКЛ: {sel.Count} (ядерные и баллистические — в первую очередь)") : L.T($"Missile defence OFF: {sel.Count}", $"Перехват ракет ВЫКЛ: {sel.Count}"));
                 return;
             }
-            var map = SceneSingleton<DynamicMap>.i;
-            if (!map.TryGetCursorCoordinates(out var cursor) || !GameApi.TryGetLocal(out _, out var hq))
+            if (!GameApi.TryGetLocal(out _, out var hq)) return;
+            Unit target;
+            if (DynamicMap.mapMaximized)
             {
-                return;
+                var map = SceneSingleton<DynamicMap>.i;
+                if (!map.TryGetCursorCoordinates(out var cursor)) return;
+                float radius = 2500f;
+                try
+                {
+                    float metersPerPixel = map.mapDimension / (900f * map.mapImage.transform.lossyScale.x);
+                    if (metersPerPixel > 0f) radius = Mathf.Clamp(45f * metersPerPixel, 150f, 8000f);
+                }
+                catch
+                {
+                }
+                target = FindTargetNear(hq, cursor, radius);
             }
-            float radius = 2500f;
-            try
+            else
             {
-                float metersPerPixel = map.mapDimension / (900f * map.mapImage.transform.lossyScale.x);
-                if (metersPerPixel > 0f) radius = Mathf.Clamp(45f * metersPerPixel, 150f, 8000f);
+                target = FindTargetScreen(hq, Input.mousePosition);
             }
-            catch
-            {
-            }
-            Unit target = FindTargetNear(hq, cursor, radius);
             if (target == null)
             {
                 foreach (var u in sel)
@@ -1052,7 +1065,7 @@ namespace FieldCommand
         private bool IsOverOwnGui(Vector3 mouse)
         {
             Vector2 gui = new Vector2(mouse.x, Screen.height - mouse.y);
-            return (mode != PlaceMode.None && HudRect.Contains(gui)) || (menuOpen && windowRect.Contains(gui)) || (menuOpen && draft != null && loadoutRect.Contains(gui));
+            return (CommandActive && CommandHudRect.Contains(gui)) || (mode != PlaceMode.None && HudRect.Contains(gui)) || (menuOpen && windowRect.Contains(gui)) || (menuOpen && draft != null && loadoutRect.Contains(gui));
         }
 
         private int stylesFor = -1;
@@ -1091,6 +1104,15 @@ namespace FieldCommand
             if (CommandMarkers.ShouldDraw(menuOpen || mode != PlaceMode.None))
             {
                 CommandMarkers.Draw(GetCamera(), purchased, factionBought);
+            }
+
+            try
+            {
+                DrawCommander();
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning("[Commander] " + e.Message);
             }
 
             if (DynamicMap.mapMaximized && mode == PlaceMode.None && RangeOverlay.Enabled.Value && Event.current.type == EventType.Repaint)
@@ -1424,6 +1446,15 @@ namespace FieldCommand
             {
                 if (Theme.SideButton(tabs[i], tab == i)) tab = i;
             }
+            GUILayout.Space(10);
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(14);
+            if (GUILayout.Button(L.T("Command mode", "Командовать"), Theme.Primary, GUILayout.Width(160)))
+            {
+                menuOpen = false;
+                SetCommandMode(true);
+            }
+            GUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
             string fundsKind = Plugin.Funds.Value == FundsSource.Player ? L.T("PERSONAL", "ЛИЧНЫЙ") : L.T("FACTION", "ФРАКЦИИ");
             GUILayout.Label(L.T("BALANCE · ", "БАЛАНС · ") + fundsKind, sideCapsStyle);
