@@ -1,4 +1,6 @@
 # Changelog
+## 0.22.1
+- Command mode, **map**: **RMB on an enemy attacks it** (like in 3D) instead of sending the units to drive onto it. RMB on empty ground still moves.
 ## 0.22.0
 - **Fire mode badges** over your purchased units — in command mode (3D) and on the map: an **orange crosshair** — fire at will, a **grey crossed-out crosshair** — fire only on order. Option *Fire mode badges over own units* in F1 → *4. Behaviour*.
 ## 0.21.0

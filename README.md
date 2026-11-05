@@ -96,7 +96,7 @@ All keys can be rebound in the Configuration Manager (F1).
 | Key | Action |
 |---|---|
 | — | Selecting units shows their **weapon range**; pointing at an enemy shows who can hit it |
-| **RMB** | Move (**Shift+RMB** — add a waypoint) |
+| **RMB** | Move (**Shift+RMB** — add a waypoint). In command mode **RMB on an enemy** — attack it |
 | **H** | Toggle *hold position* |
 | **K** | Fire at the enemy / missile under the cursor **from the current position** (artillery and SAMs engage at max range). On empty ground — clear the target |
 | **Shift+K** | Advance to firing range and attack |
@@ -270,7 +270,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **]** **=** **Num+** / **[** **-** **Num-** | Увеличить / уменьшить радиус области |
 | **X** / **Backspace** | Отмена |
 | — | Выделение своих юнитов показывает их **дальность огня**, наведение на врага — кто его достаёт |
-| **ПКМ** (**Shift+ПКМ**) | Двигаться (добавить точку маршрута) |
+| **ПКМ** (**Shift+ПКМ**) | Двигаться (добавить точку маршрута). В режиме командира **ПКМ по врагу** — атака |
 | **H** | Держать позицию |
 | **K** | Огонь по врагу/ракете под курсором с текущей позиции; по пустому месту — сбросить цель |
 | **Shift+K** | Выдвинуться на дистанцию огня и атаковать |
