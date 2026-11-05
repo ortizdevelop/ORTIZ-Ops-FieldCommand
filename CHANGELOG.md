@@ -1,4 +1,7 @@
 # Changelog
+## 0.23.0
+- **Shells and missiles in command mode**: projectiles in flight are drawn in 3D and on the map — yours in your colour, allied faint, enemy red; missiles as diamonds with a trail, shells as dots with a short tail (machine-gun fire is left out). Option *Command mode: show shells and missiles* in F1 → *4. Behaviour*.
+- Leaving command mode now **clears the selection** (3D and map), so the last squad no longer stays selected and keys don't go to it. Groups (Ctrl+1…0) are kept.
 ## 0.22.1
 - Command mode, **map**: **RMB on an enemy attacks it** (like in 3D) instead of sending the units to drive onto it. RMB on empty ground still moves.
 ## 0.22.0
