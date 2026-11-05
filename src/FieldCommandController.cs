@@ -76,6 +76,18 @@ namespace FieldCommand
             }
         }
 
+        private void FixedUpdate()
+        {
+            try
+            {
+                if (GameApi.InMission()) AreaFire.FixedTick();
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning("[AreaFire] " + e.Message);
+            }
+        }
+
         private void Tick()
         {
             bool inMission = GameApi.InMission();
@@ -94,6 +106,10 @@ namespace FieldCommand
                     paid.Clear();
                     Stratagems.ResetCooldowns();
                     attackOrders.Clear();
+                    AreaFire.Orders.Clear();
+                    AreaFire.HoldFire.Clear();
+                    AreaFire.Missiles.Clear();
+                    lastSelection.Clear();
                     catalog = null;
                 }
                 return;
@@ -140,7 +156,7 @@ namespace FieldCommand
 
             // the mouse is needed in the menu and while placing with the camera (aim with the mouse, LMB to place);
             // afterwards the game gets its own cursor state back
-            if (menuOpen || (mode == PlaceMode.Camera && !DynamicMap.mapMaximized))
+            if (menuOpen || ((mode == PlaceMode.Camera || (areaTargeting && !areaOnMap)) && !DynamicMap.mapMaximized))
             {
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
@@ -161,9 +177,24 @@ namespace FieldCommand
                     break;
             }
 
-            if (mode == PlaceMode.None && DynamicMap.mapMaximized)
+            if (areaTargeting)
             {
+                TickAreaTargeting();
+            }
+            else if (mode == PlaceMode.None && DynamicMap.mapMaximized)
+            {
+                if (Time.unscaledTime >= nextSelRemember)
+                {
+                    nextSelRemember = Time.unscaledTime + 0.25f;
+                    var cur = SelectedFriendlyCommandables();
+                    if (cur.Count > 0) { lastSelection.Clear(); lastSelection.AddRange(cur); }
+                }
                 TickMapOrders();
+            }
+            else if (mode == PlaceMode.None && Input.GetKeyDown(Plugin.AreaFireKey.Value) && GUIUtility.keyboardControl == 0
+                     && (menuOpen || CameraStateManager.cameraMode == CameraMode.free || CameraStateManager.cameraMode == CameraMode.selection))
+            {
+                BeginAreaTargeting(lastSelection.Where(u => u != null && !u.disabled).ToList(), false);
             }
 
             TickAttackOrders();
@@ -434,6 +465,7 @@ namespace FieldCommand
             else
             {
                 purchased.Add(unit);
+                if (Plugin.SpawnHoldFire.Value && !selected.Playable) AreaFire.SetHold(unit, true);
                 Toast(L.T($"Bought for you: {selected.Name} for {GameApi.Money(GameApi.TotalPrice(selected))}", $"Куплено себе: {selected.Name} за {GameApi.Money(GameApi.TotalPrice(selected))}"));
             }
             if (selected.Playable)
@@ -660,6 +692,25 @@ namespace FieldCommand
             bool hold = Input.GetKeyDown(Plugin.HoldKey.Value);
             bool attack = Input.GetKeyDown(Plugin.AttackKey.Value);
             bool defense = Input.GetKeyDown(Plugin.MissileDefenseKey.Value);
+            if (Input.GetKeyDown(Plugin.HoldFireKey.Value))
+            {
+                var hs = SelectedFriendlyCommandables();
+                if (hs.Count == 0)
+                {
+                    Toast(L.T("Select your units on the map", "Выдели свои юниты на карте"));
+                    return;
+                }
+                bool on = !hs.All(u => AreaFire.HoldFire.Contains(u));
+                foreach (var u in hs) AreaFire.SetHold(u, on);
+                Toast(on ? L.T($"Fire only on order: {hs.Count} — they shoot only at the target ({Plugin.AttackKey.Value}) or area ({Plugin.AreaFireKey.Value}) you give", $"Огонь только по приказу: {hs.Count} — стреляют только по цели ({Plugin.AttackKey.Value}) или области ({Plugin.AreaFireKey.Value}), которые ты укажешь")
+                         : L.T($"Fire at will: {hs.Count}", $"Огонь по своему усмотрению: {hs.Count}"), 4f);
+                return;
+            }
+            if (Input.GetKeyDown(Plugin.AreaFireKey.Value))
+            {
+                BeginAreaTargeting(SelectedFriendlyCommandables(), true);
+                return;
+            }
             if (Input.GetKeyDown(Plugin.PaidRearmKey.Value))
             {
                 var mineSel = SelectedFriendlyCommandables().Where(u => purchased.Contains(u) || factionBought.Contains(u)).ToList();
@@ -749,6 +800,7 @@ namespace FieldCommand
                 foreach (var u in sel)
                 {
                     FocusFire.Clear(u);
+                    AreaFire.Cancel(u);
                     attackOrders.Remove(u);
                 }
                 Toast(L.T($"Target cleared ({sel.Count}). To pick a target, point at a visible enemy or missile", $"Цель сброшена ({sel.Count}). Чтобы выбрать цель — наведи курсор на видимого врага или ракету"));
@@ -758,6 +810,7 @@ namespace FieldCommand
             int inRange = 0;
             foreach (var u in sel)
             {
+                AreaFire.Cancel(u);
                 FocusFire.Orders[u] = target;
                 FocusFire.Nudge(u);
                 if (FocusFire.CanEngageNow(u, target)) inRange++;
@@ -768,6 +821,110 @@ namespace FieldCommand
             string tname = target is Missile ? L.T("missile ", "ракета ") + (target.definition?.unitName ?? "") : (target.definition?.unitName ?? target.name);
             string tail = approach ? L.T(", the rest advance to firing range", ", остальные выдвигаются на дистанцию огня") : (inRange < sel.Count ? L.T(", the rest open fire when the target is in range (Shift+", ", остальные откроют огонь, когда цель войдёт в зону (Shift+") + Plugin.AttackKey.Value + L.T(" — advance)", " — выдвинуться)") : "");
             Toast(L.T($"Firing at: {tname}. In range: {inRange} of {sel.Count}{tail}", $"Огонь по: {tname}. В зоне досягаемости {inRange} из {sel.Count}{tail}"));
+        }
+
+        private readonly List<Unit> lastSelection = new List<Unit>();
+        private float nextSelRemember;
+
+        private void OrderArea(List<Unit> sel, GlobalPosition pos)
+        {
+            float r = Plugin.AreaRadius.Value;
+            int ok = 0;
+            var names = new List<string>();
+            foreach (var u in sel)
+            {
+                if (u == null || u.disabled) continue;
+                attackOrders.Remove(u);
+                if (AreaFire.Give(u, pos, r)) ok++;
+            }
+            string dur = Plugin.AreaDuration.Value > 0f ? L.T($", {Plugin.AreaDuration.Value:0} s", $", {Plugin.AreaDuration.Value:0} с") : "";
+            if (ok == 0)
+                Toast(L.T("Fire at area: none of the selected units can reach this point with artillery / guns / rockets", "Огонь по площади: никто из выделенных не достаёт до этой точки артиллерией / орудиями / ракетами"), 4f);
+            else
+                Toast(L.T($"Fire at area R={r:0} m: {ok} of {sel.Count}{dur}. {Plugin.AttackKey.Value} on empty ground — cease fire", $"Огонь по площади R={r:0} м: {ok} из {sel.Count}{dur}. {Plugin.AttackKey.Value} по пустому месту — прекратить"), 4f);
+        }
+
+        private bool areaTargeting, areaOnMap, areaHasPoint;
+        private readonly List<Unit> areaSel = new List<Unit>();
+        private GlobalPosition areaPoint;
+
+        private void BeginAreaTargeting(List<Unit> sel, bool onMap)
+        {
+            sel = sel.Where(u => u != null && !u.disabled).ToList();
+            if (sel.Count == 0)
+            {
+                Toast(onMap ? L.T("Select your units on the map", "Выдели свои юниты на карте")
+                            : L.T($"First select your units on the map, then aim with the camera and press {Plugin.AreaFireKey.Value}", $"Сначала выдели свои юниты на карте, потом наведи камеру и нажми {Plugin.AreaFireKey.Value}"), 4f);
+                return;
+            }
+            if (!sel.Any(u => AreaFire.Reach(u, out _, out _)))
+            {
+                Toast(L.T("None of the selected units has artillery, guns or rockets that can shell an area", "У выделенных юнитов нет артиллерии, орудий или ракет, которыми можно бить по площади"), 4f);
+                return;
+            }
+            areaSel.Clear();
+            areaSel.AddRange(sel);
+            areaTargeting = true;
+            areaOnMap = onMap;
+            areaHasPoint = false;
+            Toast(onMap ? L.T($"Fire at area ({sel.Count}): LMB on the map — fire, [ ] — radius, X / RMB — cancel", $"Огонь по площади ({sel.Count}): ЛКМ по карте — огонь, [ ] — радиус, X / ПКМ — отмена")
+                        : L.T($"Fire at area ({sel.Count}): aim, LMB / {Plugin.CameraPlaceKey.Value} — fire, [ ] — radius, X — cancel", $"Огонь по площади ({sel.Count}): наведи, ЛКМ / {Plugin.CameraPlaceKey.Value} — огонь, [ ] — радиус, X — отмена"), 6f);
+        }
+
+        private void TickAreaTargeting()
+        {
+            areaSel.RemoveAll(u => u == null || u.disabled);
+            if (areaSel.Count == 0 || mode != PlaceMode.None || Input.GetKeyDown(Plugin.CancelKey.Value) || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Backspace)
+                || (areaOnMap && (!DynamicMap.mapMaximized || Input.GetMouseButtonDown(1))))
+            {
+                areaTargeting = false;
+                return;
+            }
+            if (Input.GetKeyDown(KeyCode.RightBracket) || Input.GetKeyDown(KeyCode.LeftBracket) || Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.Minus)
+                || Input.GetKeyDown(KeyCode.KeypadPlus) || Input.GetKeyDown(KeyCode.KeypadMinus))
+            {
+                bool up = Input.GetKeyDown(KeyCode.RightBracket) || Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.KeypadPlus);
+                float r = Plugin.AreaRadius.Value * (up ? 1.25f : 0.8f);
+                Plugin.AreaRadius.Value = Mathf.Clamp(Mathf.Round(r / 10f) * 10f, 20f, 2000f);
+            }
+            bool click = Input.GetMouseButtonDown(0) && !IsOverOwnGui(Input.mousePosition) && GUIUtility.hotControl == 0;
+            if (areaOnMap)
+            {
+                var map = SceneSingleton<DynamicMap>.i;
+                areaHasPoint = map != null && map.TryGetCursorCoordinates(out areaPoint);
+                if (areaHasPoint)
+                {
+                    try
+                    {
+                        Vector3 local = areaPoint.ToLocalPosition();
+                        local.y = 20000f;
+                        if (Physics.Raycast(local, Vector3.down, out var hit, 40000f, PhysicsLayers.StaticsMask)) areaPoint.y = Mathf.Max(hit.point.ToGlobalPosition().y, 0f);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            else
+            {
+                Camera cam = GetCamera();
+                Vector3 screen = Cursor.visible && Cursor.lockState == CursorLockMode.None
+                    ? Input.mousePosition
+                    : new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
+                areaHasPoint = false;
+                if (cam != null && RaycastWorld(cam.ScreenPointToRay(screen), out Vector3 point))
+                {
+                    areaPoint = point.ToGlobalPosition();
+                    areaHasPoint = true;
+                }
+                click = click && Cursor.visible;
+                click |= Input.GetKeyDown(Plugin.CameraPlaceKey.Value) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+            }
+            if (click && areaHasPoint)
+            {
+                areaTargeting = false;
+                OrderArea(areaSel.ToList(), areaPoint);
+            }
         }
 
         private void DrawRangeOverlay()
@@ -838,6 +995,7 @@ namespace FieldCommand
             if (Time.time < nextFocusTick) return;
             nextFocusTick = Time.time + 0.5f;
             FocusFire.Cleanup();
+            AreaFire.Cleanup();
             FocusFire.UpdateMissileDefense();
             foreach (var u in FocusFire.Orders.Keys.Concat(FocusFire.MissileDefense).Distinct().ToList())
             {
@@ -938,6 +1096,18 @@ namespace FieldCommand
             if (DynamicMap.mapMaximized && mode == PlaceMode.None && RangeOverlay.Enabled.Value && Event.current.type == EventType.Repaint)
             {
                 DrawRangeOverlay();
+            }
+            if (Event.current.type == EventType.Repaint && (AreaFire.Orders.Count > 0 || areaTargeting))
+            {
+                try
+                {
+                    bool pv = areaTargeting && areaHasPoint;
+                    if (DynamicMap.mapMaximized) AreaOverlay.DrawMap(SceneSingleton<DynamicMap>.i, pv && areaOnMap, areaPoint, Plugin.AreaRadius.Value, areaSel);
+                    else AreaOverlay.Draw3D(GetCamera(), pv && !areaOnMap, areaPoint, Plugin.AreaRadius.Value, pv ? areaSel.Count(u => AreaFire.CanReach(u, areaPoint)) : 0, areaSel.Count);
+                }
+                catch
+                {
+                }
             }
 
             if (menuOpen)
@@ -1329,7 +1499,7 @@ namespace FieldCommand
             }
 
             GUILayout.Space(6);
-            GUILayout.Label(L.T($"Map: select your units → RMB — move (Shift — waypoints), {Plugin.HoldKey.Value} — hold position, {Plugin.AttackKey.Value} — fire at the target/missile under the cursor (from place; Shift+{Plugin.AttackKey.Value} — advance; {Plugin.AttackKey.Value} on empty ground — clear), {Plugin.MissileDefenseKey.Value} — automatic missile defence, {Plugin.PaidRearmKey.Value} — rearm for money, {Plugin.ScrapKey.Value} — scrap.", $"Карта: выдели свои юниты → ПКМ — двигаться (Shift — маршрут), {Plugin.HoldKey.Value} — держать позицию, {Plugin.AttackKey.Value} — огонь по цели/ракете под курсором (с места; Shift+{Plugin.AttackKey.Value} — выдвинуться; {Plugin.AttackKey.Value} по пустому месту — сбросить), {Plugin.MissileDefenseKey.Value} — авто-перехват ракет, {Plugin.PaidRearmKey.Value} — пополнить за деньги, {Plugin.ScrapKey.Value} — списать."), Theme.Small);
+            GUILayout.Label(L.T($"Map: select your units → RMB — move (Shift — waypoints), {Plugin.HoldKey.Value} — hold position, {Plugin.AttackKey.Value} — fire at the target/missile under the cursor (from place; Shift+{Plugin.AttackKey.Value} — advance; {Plugin.AttackKey.Value} on empty ground — clear), {Plugin.MissileDefenseKey.Value} — automatic missile defence, {Plugin.HoldFireKey.Value} — fire only on order, {Plugin.AreaFireKey.Value} — fire at area, {Plugin.PaidRearmKey.Value} — rearm for money, {Plugin.ScrapKey.Value} — scrap.", $"Карта: выдели свои юниты → ПКМ — двигаться (Shift — маршрут), {Plugin.HoldKey.Value} — держать позицию, {Plugin.AttackKey.Value} — огонь по цели/ракете под курсором (с места; Shift+{Plugin.AttackKey.Value} — выдвинуться; {Plugin.AttackKey.Value} по пустому месту — сбросить), {Plugin.MissileDefenseKey.Value} — авто-перехват ракет, {Plugin.HoldFireKey.Value} — огонь только по приказу, {Plugin.AreaFireKey.Value} — огонь по площади, {Plugin.PaidRearmKey.Value} — пополнить за деньги, {Plugin.ScrapKey.Value} — списать."), Theme.Small);
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
             DrawResizeHandle();
@@ -1655,6 +1825,7 @@ namespace FieldCommand
                             if (pro2) FocusFire.MissileDefense.Remove(u);
                             else FocusFire.MissileDefense.Add(u);
                         }
+                        HoldFireButton(u);
                     }
                     if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(92))) ShowOnMap(u);
                     RearmButton(u);
@@ -1671,6 +1842,8 @@ namespace FieldCommand
                     state += L.T(", target: ", ", цель: ") + (ft is Missile ? L.T("missile", "ракета") : (ft.definition?.unitName ?? ft.name)) + (FocusFire.CanEngageNow(u, ft) ? L.T(" (firing)", " (огонь)") : L.T(" (out of range)", " (вне досягаемости)"));
                 }
                 if (FocusFire.MissileDefense.Contains(u)) state += L.T(", ABM", ", ПРО");
+                if (AreaFire.Orders.ContainsKey(u)) state += L.T(", shelling an area", ", огонь по площади");
+                if (AreaFire.HoldFire.Contains(u)) state += L.T(", fire only on order", ", огонь только по приказу");
                 OwnedHeader(u, state);
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button(hold ? L.T("Release", "Отпустить") : L.T("Hold", "Держать"), GUILayout.Width(96)))
@@ -1683,6 +1856,7 @@ namespace FieldCommand
                 {
                     attackOrders.Remove(u);
                     FocusFire.Clear(u);
+                    AreaFire.Cancel(u);
                     GameApi.Stop(u);
                 }
                 bool pro = FocusFire.MissileDefense.Contains(u);
@@ -1691,6 +1865,7 @@ namespace FieldCommand
                     if (pro) FocusFire.MissileDefense.Remove(u);
                     else FocusFire.MissileDefense.Add(u);
                 }
+                HoldFireButton(u);
                 if (GUILayout.Button(L.T("On map", "На карте"), GUILayout.Width(92))) ShowOnMap(u);
                 RearmButton(u);
                 GUILayout.FlexibleSpace();
@@ -1724,6 +1899,15 @@ namespace FieldCommand
         {
             GUILayout.Label(u.definition?.unitName ?? u.name, Theme.Header);
             if (!string.IsNullOrEmpty(state)) GUILayout.Label(state, Theme.Small);
+        }
+
+        private static void HoldFireButton(Unit u)
+        {
+            bool hf = AreaFire.HoldFire.Contains(u);
+            if (GUILayout.Button(hf ? L.T("Fire: on order", "Огонь: приказ") : L.T("Fire: free", "Огонь: сам"), hf ? Theme.Primary : GUI.skin.button, GUILayout.Width(118)))
+            {
+                AreaFire.SetHold(u, !hf);
+            }
         }
 
         private void RearmButton(Unit u)

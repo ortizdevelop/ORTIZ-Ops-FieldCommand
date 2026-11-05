@@ -132,9 +132,9 @@ namespace FieldCommand
             Label(new Vector2(hp.x + 18f, hp.y - 30f), msg, can == shown.Count ? Ok : can > 0 ? new Color(1f, 0.85f, 0.4f) : Bad);
         }
 
-        private static string Km(float m) => m >= 1000f ? (m / 1000f).ToString("0.#") + L.T(" km", " км") : m.ToString("0") + L.T(" m", " м");
+        public static string Km(float m) => m >= 1000f ? (m / 1000f).ToString("0.#") + L.T(" km", " км") : m.ToString("0") + L.T(" m", " м");
 
-        private static void Label(Vector2 p, string text, Color col)
+        public static void Label(Vector2 p, string text, Color col)
         {
             var st = Theme.Small;
             var size = st.CalcSize(new GUIContent(text));
@@ -166,7 +166,7 @@ namespace FieldCommand
             GUI.color = old;
         }
 
-        private static void Dashed(Vector2 a, Vector2 b, Color col, float w)
+        public static void Dashed(Vector2 a, Vector2 b, Color col, float w)
         {
             float len = Vector2.Distance(a, b);
             int n = Mathf.Clamp((int)(len / 14f), 1, 200);
@@ -188,7 +188,7 @@ namespace FieldCommand
             }
         }
 
-        private static void Disc(Vector2 c, float r, Color col)
+        public static void Disc(Vector2 c, float r, Color col)
         {
             if (r < 2f || r > 20000f) return;
             if (disc == null)
@@ -211,6 +211,81 @@ namespace FieldCommand
             GUI.color = col;
             GUI.DrawTexture(new Rect(c.x - r, c.y - r, r * 2f, r * 2f), disc);
             GUI.color = old;
+        }
+    }
+}
+
+namespace FieldCommand
+{
+    /// <summary>Area-fire circles: on the map and projected onto the ground in the 3D view.</summary>
+    internal static class AreaOverlay
+    {
+        public static readonly Color AreaColor = new Color(1f, 0.32f, 0.22f, 1f);
+
+        public static void DrawMap(DynamicMap map, bool preview, GlobalPosition previewPoint, float previewRadius, List<Unit> previewUnits)
+        {
+            if (map == null) return;
+            foreach (var kv in AreaFire.Orders)
+            {
+                var u = kv.Key;
+                var o = kv.Value;
+                if (u == null || !RangeOverlay.ToGui(map, o.Center, out var c, out var k)) continue;
+                RangeOverlay.Disc(c, o.Radius * k, new Color(AreaColor.r, AreaColor.g, AreaColor.b, 0.12f));
+                RangeOverlay.Circle(c, Mathf.Max(o.Radius * k, 5f), AreaColor, 2f, false);
+                if (RangeOverlay.ToGui(map, u.GlobalPosition(), out var up, out _)) RangeOverlay.Dashed(up, c, new Color(AreaColor.r, AreaColor.g, AreaColor.b, 0.7f), 1.5f);
+            }
+            if (!preview || !RangeOverlay.ToGui(map, previewPoint, out var pc, out var pk)) return;
+            int can = 0;
+            foreach (var u in previewUnits)
+            {
+                if (u == null || !RangeOverlay.ToGui(map, u.GlobalPosition(), out var up, out _)) continue;
+                bool ok = AreaFire.CanReach(u, previewPoint);
+                if (ok) can++;
+                RangeOverlay.Line(up, pc, ok ? new Color(0.45f, 1f, 0.45f, 0.8f) : new Color(1f, 0.35f, 0.3f, 0.6f), 1.5f);
+            }
+            Color col = can > 0 ? AreaColor : new Color(0.6f, 0.6f, 0.6f, 1f);
+            RangeOverlay.Disc(pc, previewRadius * pk, new Color(col.r, col.g, col.b, 0.15f));
+            RangeOverlay.Circle(pc, Mathf.Max(previewRadius * pk, 6f), col, 2f, true);
+            RangeOverlay.Label(new Vector2(pc.x + 16f, pc.y + 10f),
+                L.T($"AREA R={previewRadius:0} m — reach: {can} of {previewUnits.Count}", $"ПЛОЩАДЬ R={previewRadius:0} м — достают: {can} из {previewUnits.Count}"),
+                can > 0 ? new Color(1f, 0.85f, 0.6f) : new Color(1f, 0.5f, 0.45f));
+        }
+
+        public static void Draw3D(Camera cam, bool preview, GlobalPosition previewPoint, float previewRadius, int canReach, int total)
+        {
+            if (cam == null) return;
+            foreach (var o in AreaFire.Orders.Values) Ring(cam, o.Center, o.Radius, AreaColor, false);
+            if (!preview) return;
+            Color col = canReach > 0 ? AreaColor : new Color(0.7f, 0.7f, 0.7f, 1f);
+            Ring(cam, previewPoint, previewRadius, col, true);
+            Vector3 sp = cam.WorldToScreenPoint(previewPoint.ToLocalPosition());
+            if (sp.z > 0f)
+                RangeOverlay.Label(new Vector2(sp.x + 16f, Screen.height - sp.y + 10f),
+                    L.T($"AREA R={previewRadius:0} m — reach: {canReach} of {total}", $"ПЛОЩАДЬ R={previewRadius:0} м — достают: {canReach} из {total}"),
+                    canReach > 0 ? new Color(1f, 0.85f, 0.6f) : new Color(1f, 0.5f, 0.45f));
+        }
+
+        private static void Ring(Camera cam, GlobalPosition c, float r, Color col, bool dashed)
+        {
+            Vector3 center = c.ToLocalPosition();
+            const int n = 48;
+            Vector3? prev = null;
+            for (int i = 0; i <= n; i++)
+            {
+                float a = i * Mathf.PI * 2f / n;
+                Vector3 w = center + new Vector3(Mathf.Cos(a) * r, 2f, Mathf.Sin(a) * r);
+                Vector3 s = cam.WorldToScreenPoint(w);
+                Vector3? cur = s.z > 0f ? new Vector3(s.x, Screen.height - s.y, 0f) : (Vector3?)null;
+                if (prev.HasValue && cur.HasValue && (!dashed || i % 2 == 0)) RangeOverlay.Line(prev.Value, cur.Value, col, 2f);
+                prev = cur;
+            }
+            Vector3 cs = cam.WorldToScreenPoint(center);
+            if (cs.z > 0f)
+            {
+                var p = new Vector2(cs.x, Screen.height - cs.y);
+                RangeOverlay.Line(p + new Vector2(-6f, 0f), p + new Vector2(6f, 0f), col, 2f);
+                RangeOverlay.Line(p + new Vector2(0f, -6f), p + new Vector2(0f, 6f), col, 2f);
+            }
         }
     }
 }

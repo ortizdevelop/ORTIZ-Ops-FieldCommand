@@ -219,7 +219,16 @@ namespace FieldCommand
         {
             try
             {
-                return !TryForce(__instance, clearAfterSearch);
+                if (TryForce(__instance, clearAfterSearch)) return false;
+                var att = attachedUnitRef(__instance);
+                if (att != null && !(att is Aircraft) && AreaFire.Blocks(att))
+                {
+                    // fire only on order / shelling an area: no targets of its own
+                    AreaFire.ClearTurret(__instance);
+                    if (clearAfterSearch) potentialRef(__instance)?.Clear();
+                    return false;
+                }
+                return true;
             }
             catch (Exception e)
             {
@@ -279,9 +288,15 @@ namespace FieldCommand
             try
             {
                 var attached = Traverse.Create(__instance).Field("attachedUnit").GetValue<Unit>();
-                if (attached == null || attached.disabled || !FocusFire.TryGet(attached, out var t)) return true;
-                var ws = Traverse.Create(__instance).Field("weaponStation").GetValue<WeaponStation>();
+                if (attached == null || attached.disabled) return true;
                 var turrets = Traverse.Create(__instance).Field("turrets").GetValue<List<Turret>>();
+                if (!FocusFire.TryGet(attached, out var t))
+                {
+                    if (!AreaFire.Blocks(attached)) return true;
+                    if (turrets != null) foreach (var tu in turrets) if (tu != null) AreaFire.ClearTurret(tu);
+                    return false;
+                }
+                var ws = Traverse.Create(__instance).Field("weaponStation").GetValue<WeaponStation>();
                 var tracking = FocusFire.Track(attached, t);
                 if (ws == null || turrets == null || tracking == null) return true;
                 float d = Vector3.Distance(attached.transform.position, t.transform.position);
@@ -318,7 +333,8 @@ namespace FieldCommand
             {
                 var tr = Traverse.Create(__instance);
                 var attached = tr.Field("attachedUnit").GetValue<Unit>();
-                if (attached == null || attached.disabled || attached.NetworkHQ == null || !FocusFire.TryGet(attached, out var t)) return true;
+                if (attached == null || attached.disabled || attached.NetworkHQ == null) return true;
+                if (!FocusFire.TryGet(attached, out var t)) return !AreaFire.Blocks(attached);
                 var stations = tr.Field("subscribedWeaponStations").GetValue<List<WeaponStation>>();
                 if (stations == null || stations.Count == 0) return true;
                 var tracking = FocusFire.Track(attached, t);

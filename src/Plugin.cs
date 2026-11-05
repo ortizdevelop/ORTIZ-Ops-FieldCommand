@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.14.2";
+        public const string Version = "0.15.0";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -37,6 +37,11 @@ namespace FieldCommand
         internal static ConfigEntry<KeyCode> AttackKey;
         internal static ConfigEntry<KeyboardShortcut> LeaveKey;
         internal static ConfigEntry<KeyCode> MissileDefenseKey;
+        internal static ConfigEntry<KeyCode> HoldFireKey;
+        internal static ConfigEntry<KeyCode> AreaFireKey;
+        internal static ConfigEntry<bool> SpawnHoldFire;
+        internal static ConfigEntry<float> AreaRadius;
+        internal static ConfigEntry<float> AreaDuration;
 
         // Factions
         internal static ConfigEntry<bool> RestrictToFaction;
@@ -94,7 +99,9 @@ namespace FieldCommand
 
             try
             {
-                new HarmonyLib.Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
+                var h = new HarmonyLib.Harmony(Guid);
+                h.PatchAll(typeof(Plugin).Assembly);
+                AreaFire.PatchSeekers(h);
             }
             catch (System.Exception e)
             {
@@ -147,6 +154,12 @@ namespace FieldCommand
             MissileDefenseKey = L.Bind(Config, sCtl, rCtl, "Missile defence", "Перехват ракет", KeyCode.L,
                 "On the map: selected units pick and shoot down enemy missiles themselves (strategic and nuclear first)",
                 "На карте: выделенные юниты сами выбирают и сбивают вражеские ракеты (стратегические и ядерные — первыми)");
+            HoldFireKey = L.Bind(Config, sCtl, rCtl, "Fire only on order", "Огонь только по приказу", KeyCode.I,
+                "On the map: toggle 'fire only on order' for the selected own units — they don't shoot at anything until you give them a target (or an area)",
+                "На карте: переключить «огонь только по приказу» для выделенных своих юнитов — они ни по кому не стреляют, пока ты не укажешь цель (или область)");
+            AreaFireKey = L.Bind(Config, sCtl, rCtl, "Fire at area", "Огонь по площади", KeyCode.Z,
+                "Selected units shell the area under the cursor (on the map) or at the camera's aim point, whether there is an enemy or not. [ ] — area radius",
+                "Выделенные юниты обстреливают область под курсором (на карте) или в точке прицела камеры — есть там враг или нет. [ ] — радиус области");
 
             RestrictToFaction = L.Bind(Config, sFac, rFac, "Own faction equipment only", "Только техника своей фракции", true,
                 "BDF buys only BDF equipment, PALA only PALA (shared equipment is available to both)",
@@ -248,6 +261,12 @@ namespace FieldCommand
             SupplyTrucksAutonomous = L.Bind(Config, sBeh, rBeh, "Supply trucks work on their own", "Машины снабжения работают сами", true,
                 "Purchased supply trucks ignore hold position and drive to friendly units that need ammo, like in the base game",
                 "Купленные машины снабжения не держат позицию, а сами ездят к союзникам, которым нужны боеприпасы, как в обычной игре");
+            SpawnHoldFire = L.Bind(Config, sBeh, rBeh, "New units: fire only on order", "Новые юниты: огонь только по приказу", false,
+                "Purchased units start in 'fire only on order' mode", "Купленные юниты сразу в режиме «огонь только по приказу»");
+            AreaRadius = L.Bind(Config, sBeh, rBeh, "Area fire radius, m", "Радиус огня по площади, м", 150f,
+                "Radius of the area shelled by 'Fire at area' (also [ ] on the map)", "Радиус области для «Огонь по площади» (также [ ] на карте)", new AcceptableValueRange<float>(20f, 2000f));
+            AreaDuration = L.Bind(Config, sBeh, rBeh, "Area fire duration, s", "Длительность огня по площади, с", 60f,
+                "How long units keep shelling the area (0 — until out of ammo or cancelled)", "Сколько юниты обстреливают область (0 — пока не кончатся боеприпасы или не отменишь)", new AcceptableValueRange<float>(0f, 900f));
         }
 
         /// <summary>Settings of the old "com.nikita.fieldcommand" build are carried over once.</summary>
