@@ -1,4 +1,10 @@
 # Changelog
+## 0.18.0
+- Command mode: **RMB on an enemy — attack** with the selected units (no map selection needed); units in range fire, the rest advance to ~80 % of their reach (artillery no longer drives up to 1.5 km).
+- Waypoints: **Shift+RMB** (was Ctrl+RMB). **Hold RMB and drag** — the units move there and end up facing the arrow.
+- The free camera turns with the **mouse wheel held** in command mode (RMB is for orders). Option in F1 → *4. Behaviour*.
+- **Enemy icons** in command mode: spotted enemies are shown with the game's hostile icons in red.
+- Fire at area: guns are laid with the game's own aiming formula (as when they shoot at a target) and fire only after the barrel has stayed on the aim for 0.6 s — no more shots into the sky or the ground while the turret is still turning. The log lists how each weapon is used for area fire.
 ## 0.17.0
 - **F6 is now command mode**: a bar at the top with **Purchase / supply**, **Units** and **Stratagems** — a click opens the panel, another click collapses it. Selecting units with the mouse, moving them, waypoints and all order keys work right away, outside the panels too. The separate Shift+F6 mode is gone.
 - Your units' icons are shown all the time in command mode (with Shift+F6 they were missing).
