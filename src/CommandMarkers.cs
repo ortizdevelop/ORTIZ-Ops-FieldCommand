@@ -134,19 +134,46 @@ namespace FieldCommand
         }
 
         /// <summary>Same look as the game's HUD and Ground Control RTS: the unit's own outlined "friendly" icon at the unit, tinted.</summary>
+        private static readonly Color EnemyColor = new Color(1f, 0.27f, 0.22f, 1f);
+
+        /// <summary>Enemies our side has spotted: the game's hostile icon at their known position, in red.</summary>
+        public static void DrawEnemies(Camera cam)
+        {
+            if (cam == null || Event.current.type != EventType.Repaint || !GameApi.TryGetLocal(out _, out var hq) || hq == null) return;
+            foreach (var u in UnitRegistry.allUnits)
+            {
+                try
+                {
+                    if (u == null || u.disabled || u.definition == null || u.NetworkHQ == null || u.NetworkHQ == hq) continue;
+                    if (u is Missile || u is Building && !(u.GetComponentInChildren<Turret>() != null)) continue;
+                    if (!hq.TryGetKnownPosition(u, out var known)) continue;
+                    if (!hq.IsTargetBeingTracked(u)) continue;
+                    DrawOne(cam, u, EnemyColor, 0.9f, known.ToLocalPosition(), true);
+                }
+                catch
+                {
+                }
+            }
+        }
+
         private static void DrawOne(Camera cam, Unit u, Color color, float sizeMul)
+        {
+            if (u == null) return;
+            DrawOne(cam, u, color, sizeMul, u.transform.position, false);
+        }
+
+        private static void DrawOne(Camera cam, Unit u, Color color, float sizeMul, Vector3 world, bool hostile)
         {
             if (u == null || u.disabled || u.definition == null) return;
             try
             {
-                Vector3 world = u.transform.position;
                 Vector3 camPos = cam.transform.position;
                 if (Vector3.Dot(world - camPos, cam.transform.forward) <= 0f) return;
                 Vector3 sp = cam.WorldToScreenPoint(world);
                 if (sp.z <= 0f || sp.x < 0f || sp.y < 0f || sp.x > Screen.width || sp.y > Screen.height) return;
 
-                var sprite = u.definition.friendlyIcon;
-                if (sprite == null && GameAssets.i != null) sprite = GameAssets.i.targetUnitSpriteFriendly;
+                var sprite = hostile ? u.definition.hostileIcon : u.definition.friendlyIcon;
+                if (sprite == null && GameAssets.i != null) sprite = hostile ? GameAssets.i.targetUnitSprite : GameAssets.i.targetUnitSpriteFriendly;
                 if (sprite == null || sprite.texture == null) return;
 
                 // the game shrinks markers with distance (like RTS: 1 → 0.45 between ~12 and 37 km)

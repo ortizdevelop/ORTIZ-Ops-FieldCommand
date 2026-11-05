@@ -39,6 +39,7 @@ namespace FieldCommand
             public Vector3 AimDir;
             public float NextSolve;
             public bool Solvable = true;
+            public float OnTargetSince = -1f;
         }
 
         public static readonly Dictionary<Unit, Order> Orders = new Dictionary<Unit, Order>();
@@ -172,6 +173,18 @@ namespace FieldCommand
             }
             if (o.Slots.Count == 0) return false;
             o.Fc = u.GetComponent<FireControl>();
+            try
+            {
+                foreach (var sl in o.Slots.Values)
+                {
+                    string seeker = "";
+                    if (!sl.Gun && sl.Ws.Weapons[0] is MissileLauncher ml && ml.missile?.unitPrefab != null) seeker = ml.missile.unitPrefab.GetComponentInChildren<MissileSeeker>(true)?.GetType().Name ?? "none";
+                    Plugin.Log.LogInfo($"[AreaFire] {u.definition?.unitName}: {sl.Ws.WeaponInfo?.weaponName} — {(sl.Gun ? "gun" : "launcher " + seeker)}, turret {(sl.Turret != null ? (noAimRef(sl.Turret) ? "fires without aiming" : "aimed") : "none")}, fire control {(o.Fc != null && fcStationsRef(o.Fc) != null && fcStationsRef(o.Fc).Contains(sl.Ws))}");
+                }
+            }
+            catch
+            {
+            }
             Orders[u] = o;
             FocusFire.Clear(u);
             ClearTargets(u);
@@ -329,19 +342,13 @@ namespace FieldCommand
                 if (t.enabled) t.enabled = false; // we steer it ourselves
                 stationRef(t) = ws;
                 Vector3 muzzle = ws.Weapons[0].transform.position;
-                if (s.Gun)
+                if (Time.timeSinceLevelLoad >= s.NextSolve)
                 {
-                    if (Time.timeSinceLevelLoad >= s.NextSolve)
-                    {
-                        s.NextSolve = Time.timeSinceLevelLoad + 0.5f;
-                        s.Solvable = Ballistic.Solve(ws.WeaponInfo, muzzle.ToGlobalPosition(), s.Aim, out s.AimDir);
-                    }
-                    if (!s.Solvable) return;
+                    s.NextSolve = Time.timeSinceLevelLoad + 0.5f;
+                    s.AimDir = GameAim(t, ws.WeaponInfo, muzzle, s.Aim);
+                    s.Solvable = s.AimDir.sqrMagnitude > 1e-6f;
                 }
-                else
-                {
-                    s.AimDir = (s.Aim.ToLocalPosition() - muzzle).normalized;
-                }
+                if (!s.Solvable) return;
                 aimTurret.Invoke(t, new object[] { s.AimDir });
                 if (s.Gun)
                 {
@@ -355,9 +362,70 @@ namespace FieldCommand
                     aimed = f.sqrMagnitude < 1e-4f || w.sqrMagnitude < 1e-4f || Vector3.Angle(f, w) < 3f;
                 }
             }
-            if (!aimed || !ws.Ready()) return;
+            // like the game: only after the barrel has stayed on the aim for a moment
+            if (!aimed)
+            {
+                s.OnTargetSince = -1f;
+                return;
+            }
+            if (s.OnTargetSince < 0f) s.OnTargetSince = Time.timeSinceLevelLoad;
+            if (t != null && !noAimRef(t) && Time.timeSinceLevelLoad - s.OnTargetSince < 0.6f) return;
+            if (!ws.Ready()) return;
             ws.Fire(u, null);
             o.Shots++;
+        }
+
+        private static readonly AccessTools.FieldRef<Turret, AimSolver> solverRef = SafeRef<Turret, AimSolver>("aimSolver");
+        private static readonly AccessTools.FieldRef<AimSolver, bool> artilleryRef = SafeRef<AimSolver, bool>("artillery");
+        private static readonly AccessTools.FieldRef<AimSolver, float> artDragRef = SafeRef<AimSolver, float>("artilleryDragCoef");
+
+        /// <summary>The game's own aim formula (AimSolver.GetAimVector) for a fixed point on the ground.</summary>
+        private static Vector3 GameAim(Turret t, WeaponInfo wi, Vector3 muzzle, GlobalPosition aim)
+        {
+            GlobalPosition from = muzzle.ToGlobalPosition();
+            Vector3 d = aim - from;
+            float range = d.magnitude;
+            if (range < 1f) return Vector3.zero;
+            if (wi.missile) return d.normalized;
+            float maxSpeed = wi.GetMaxSpeed();
+            if (maxSpeed <= 1f) return d.normalized;
+            bool artillery = false;
+            float dragCoef = 1f;
+            try
+            {
+                var solver = solverRef != null ? solverRef(t) : null;
+                if (solver != null)
+                {
+                    if (artilleryRef != null) artillery = artilleryRef(solver);
+                    if (artDragRef != null) dragCoef = artDragRef(solver);
+                }
+            }
+            catch
+            {
+            }
+            float k = range / Mathf.Max(wi.targetRequirements.maxRange, 1f);
+            if (artillery && k > 0.2f)
+            {
+                float eff = Mathf.Lerp(range * (1f + 0.5f * dragCoef), range * (1f + 1.5f * dragCoef), k);
+                Vector3 flat = new Vector3(d.x, 0f, d.z);
+                if (Mathf.Abs(d.y) / range < 0.1f)
+                {
+                    float ang = 0.5f * Mathf.Asin(Mathf.Min(eff * 9.81f / (maxSpeed * maxSpeed), 1f));
+                    return (flat.normalized + Vector3.up * Mathf.Tan(ang)).normalized;
+                }
+            }
+            float time = range / (maxSpeed * 0.9f);
+            Vector3 v = d + time * time * 4.905f * (wi.gravMult > 0f ? wi.gravMult : 1f) * Vector3.up;
+            try
+            {
+                // the game corrects the simple lead with a trajectory simulation
+                Kinematics.TrajectorySim(false, wi, v.normalized * (wi.muzzleVelocity > 0f ? wi.muzzleVelocity : maxSpeed), from, aim, Vector3.zero, Vector3.zero, 0.1f, out var miss, out _);
+                if (miss.magnitude < range) v -= miss;
+            }
+            catch
+            {
+            }
+            return v.normalized;
         }
 
         // ---------- missiles fired by an area order ----------

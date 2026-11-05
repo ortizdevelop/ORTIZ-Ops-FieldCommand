@@ -8,7 +8,7 @@ namespace FieldCommand
     /// <summary>
     /// Command mode: RTS-style control in the 3D view with the purchase menu closed.
     /// LMB — select one of your purchased units, drag — box select (Shift — add), RMB — move (in formation),
-    /// Ctrl+RMB — add a waypoint. Order keys (K, Z, I, H, L, Y, Delete) work on this selection.
+    /// Shift+RMB — add a waypoint, RMB drag — facing, RMB on an enemy — attack. Order keys (K, Z, I, H, L, Y, Delete) work on this selection.
     /// </summary>
     internal partial class FieldCommandController
     {
@@ -23,7 +23,12 @@ namespace FieldCommand
         {
             public readonly List<GlobalPosition> Points = new List<GlobalPosition>();
             public float IssuedAt;
+            /// <summary>Optional point slightly ahead of the last one: the unit rolls onto it to end up facing that way.</summary>
+            public GlobalPosition? Face;
         }
+
+        private bool rmbHasPoint;
+        private Vector3 rmbWorld;
 
         private readonly Dictionary<Unit, Route> routes = new Dictionary<Unit, Route>();
 
@@ -85,7 +90,11 @@ namespace FieldCommand
         /// <summary>Units the order keys apply to: the map selection when the map is open, otherwise the command-mode selection.</summary>
         private List<Unit> OrderSelection()
         {
-            if (DynamicMap.mapMaximized) return SelectedFriendlyCommandables();
+            if (DynamicMap.mapMaximized)
+            {
+                var mapSel = SelectedFriendlyCommandables();
+                if (mapSel.Count > 0) return mapSel;
+            }
             return cmdSel.Where(u => u != null && !u.disabled && u is ICommandable).ToList();
         }
 
@@ -93,6 +102,7 @@ namespace FieldCommand
 
         private void TickCommander()
         {
+            FreeLook_Patch.CommandMode = CommandActive && Plugin.MiddleMouseLook.Value;
             cmdSel.RemoveAll(u => !Selectable(u) || !purchased.Contains(u));
             TickRoutes();
             pings.RemoveAll(p => Time.unscaledTime > p.Until);
@@ -127,15 +137,29 @@ namespace FieldCommand
             }
 
             // ---- move orders (on release, so dragging with RMB doesn't send orders) ----
+            // RMB: click — move (on an enemy — attack), hold and drag — move and face the arrow; Shift — add a waypoint
             if (Input.GetMouseButtonDown(1) && !overGui)
             {
                 rmbDown = true;
                 rmbDownPos = mouse;
+                var cam0 = GetCamera();
+                rmbHasPoint = cam0 != null && RaycastWorld(cam0.ScreenPointToRay(Input.mousePosition), out rmbWorld);
             }
             if (rmbDown && Input.GetMouseButtonUp(1))
             {
                 rmbDown = false;
-                if ((mouse - rmbDownPos).magnitude < 8f) MoveOrder(Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
+                bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+                if ((mouse - rmbDownPos).magnitude < 12f)
+                {
+                    Unit enemy = null;
+                    if (GameApi.TryGetLocal(out _, out var hq0)) enemy = FindTargetScreen(hq0, Input.mousePosition);
+                    if (enemy != null) AttackFromCommand(enemy);
+                    else if (rmbHasPoint) MoveOrder(rmbWorld, null, shift);
+                }
+                else if (rmbHasPoint && TryFacing(out Vector3 face))
+                {
+                    MoveOrder(rmbWorld, face, shift);
+                }
             }
         }
 
@@ -188,21 +212,40 @@ namespace FieldCommand
 
         // ---------- move orders and waypoints ----------
 
-        private void MoveOrder(bool waypoint)
+        /// <summary>Direction of the RMB drag on the ground (from the press point to the cursor).</summary>
+        private bool TryFacing(out Vector3 dir)
+        {
+            dir = Vector3.forward;
+            var cam = GetCamera();
+            if (cam == null || !RaycastWorld(cam.ScreenPointToRay(Input.mousePosition), out var cur)) return false;
+            dir = cur - rmbWorld;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 4f) return false;
+            dir.Normalize();
+            return true;
+        }
+
+        private void AttackFromCommand(Unit enemy)
         {
             var sel = cmdSel.Where(Selectable).ToList();
             if (sel.Count == 0) return;
-            var cam = GetCamera();
-            if (cam == null || !RaycastWorld(cam.ScreenPointToRay(Input.mousePosition), out Vector3 point)) return;
+            foreach (var u in sel) routes.Remove(u);
+            OrderAttack(sel, enemy, true);
+        }
+
+        private void MoveOrder(Vector3 point, Vector3? facing, bool waypoint)
+        {
+            var sel = cmdSel.Where(Selectable).ToList();
+            if (sel.Count == 0) return;
             GlobalPosition target = point.ToGlobalPosition();
 
             // formation: a grid around the point, facing the direction of travel
             Vector3 centroid = Vector3.zero;
             foreach (var u in sel) centroid += u.transform.position;
             centroid /= sel.Count;
-            Vector3 fwd = point - centroid;
+            Vector3 fwd = facing ?? (point - centroid);
             fwd.y = 0f;
-            fwd = fwd.sqrMagnitude > 1f ? fwd.normalized : Vector3.forward;
+            fwd = fwd.sqrMagnitude > 1e-4f ? fwd.normalized : Vector3.forward;
             Vector3 right = new Vector3(fwd.z, 0f, -fwd.x);
             int cols = Mathf.CeilToInt(Mathf.Sqrt(sel.Count));
             int rows = Mathf.CeilToInt(sel.Count / (float)cols);
@@ -217,12 +260,14 @@ namespace FieldCommand
                 Vector3 off = right * ((col - (cols - 1) * 0.5f) * spacing) - fwd * ((row - (rows - 1) * 0.5f) * spacing);
                 GlobalPosition dest = target + off;
                 attackOrders.Remove(u);
+                FocusFire.Clear(u);
                 if (!routes.TryGetValue(u, out var rt) || !waypoint)
                 {
                     rt = new Route();
                     routes[u] = rt;
                 }
                 rt.Points.Add(dest);
+                rt.Face = facing.HasValue ? dest + facing.Value * (u is Ship ? 400f : 60f) : (GlobalPosition?)null;
                 if (rt.Points.Count == 1)
                 {
                     GameApi.MoveTo(u, dest);
@@ -230,6 +275,7 @@ namespace FieldCommand
                 }
             }
             pings.Add(new Ping { P = target, Until = Time.unscaledTime + 1.5f, Waypoint = waypoint });
+            if (facing.HasValue) pings.Add(new Ping { P = target + facing.Value * 60f, Until = Time.unscaledTime + 1.5f, Waypoint = waypoint });
         }
 
         private static float ArriveRadius(Unit u) => u is Ship ? 300f : 40f;
@@ -278,6 +324,7 @@ namespace FieldCommand
                     if (rt.Points.Count == 0)
                     {
                         routes.Remove(u);
+                        if (rt.Face.HasValue) GameApi.MoveTo(u, rt.Face.Value); // roll forward a little to face the chosen way
                         continue;
                     }
                     GameApi.MoveTo(u, rt.Points[0]);
@@ -319,7 +366,14 @@ namespace FieldCommand
         // ---------- drawing ----------
 
         private static readonly Color SelColor = new Color(0.45f, 1f, 0.45f, 1f);
-        private Rect CommandHudRect => new Rect(Screen.width * 0.5f - 470f, 8f, 940f, 64f);
+        private Rect CommandHudRect
+        {
+            get
+            {
+                float w = Mathf.Min(Screen.width - 20f, 1160f);
+                return new Rect(Screen.width * 0.5f - w * 0.5f, 8f, w, 80f);
+            }
+        }
 
         private void DrawCommander()
         {
@@ -381,6 +435,26 @@ namespace FieldCommand
                     if (r.Surface > 0f) AreaOverlay.Ring(cam, u.GlobalPosition(), r.Surface, new Color(OwnedMarks.Normal.r, OwnedMarks.Normal.g, OwnedMarks.Normal.b, 0.55f), true);
                 }
             }
+            // RMB held and dragged: the direction the units will face
+            if (rmbDown && rmbHasPoint)
+            {
+                Vector2 mouseNow = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+                Vector3 a3 = cam.WorldToScreenPoint(rmbWorld + Vector3.up * 2f);
+                if (a3.z > 0f && (mouseNow - rmbDownPos).magnitude >= 12f)
+                {
+                    Vector2 a = new Vector2(a3.x, Screen.height - a3.y);
+                    Vector2 dir = (mouseNow - a);
+                    if (dir.sqrMagnitude > 1f)
+                    {
+                        Vector2 n = dir.normalized, perp = new Vector2(-n.y, n.x);
+                        Color ac = Theme.AccentColor;
+                        RangeOverlay.Disc(a, 6f, ac);
+                        RangeOverlay.Line(a, mouseNow, ac, 3f);
+                        RangeOverlay.Line(mouseNow, mouseNow - n * 16f + perp * 10f, ac, 3f);
+                        RangeOverlay.Line(mouseNow, mouseNow - n * 16f - perp * 10f, ac, 3f);
+                    }
+                }
+            }
             // selection box
             if (boxDragging)
             {
@@ -428,8 +502,8 @@ namespace FieldCommand
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(L.T("Exit ", "Выход ") + Plugin.MenuKey.Value, GUILayout.Width(110))) SetCommandMode(false);
             GUILayout.EndHorizontal();
-            GUILayout.Label(L.T($"LMB / drag — select your units · RMB — move · Ctrl+RMB — waypoint · {Plugin.AttackKey.Value} attack · {Plugin.AreaFireKey.Value} strike area · {Plugin.HoldFireKey.Value} fire on order · {Plugin.HoldKey.Value} hold · {Plugin.PaidRearmKey.Value} rearm",
-                                $"ЛКМ / рамка — выделить свои юниты · ПКМ — двигаться · Ctrl+ПКМ — маршрут · {Plugin.AttackKey.Value} атака · {Plugin.AreaFireKey.Value} область удара · {Plugin.HoldFireKey.Value} огонь по приказу · {Plugin.HoldKey.Value} держать · {Plugin.PaidRearmKey.Value} пополнить"), Theme.Small);
+            GUILayout.Label(L.T($"LMB / drag — select · RMB — move (hold + drag — facing) · Shift+RMB — waypoint · RMB on enemy — attack · wheel held — turn camera · {Plugin.AttackKey.Value} fire from place · {Plugin.AreaFireKey.Value} strike area · {Plugin.HoldFireKey.Value} fire on order · {Plugin.HoldKey.Value} hold · {Plugin.PaidRearmKey.Value} rearm",
+                                $"ЛКМ / рамка — выделить · ПКМ — двигаться (зажать и потянуть — куда смотреть) · Shift+ПКМ — маршрут · ПКМ по врагу — атака · колесо — поворот камеры · {Plugin.AttackKey.Value} огонь с места · {Plugin.AreaFireKey.Value} область удара · {Plugin.HoldFireKey.Value} огонь по приказу · {Plugin.HoldKey.Value} держать · {Plugin.PaidRearmKey.Value} пополнить"), Theme.Small);
             GUILayout.EndArea();
         }
 

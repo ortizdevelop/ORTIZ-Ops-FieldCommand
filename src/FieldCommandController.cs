@@ -820,9 +820,15 @@ namespace FieldCommand
                 return;
             }
             bool approach = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            OrderAttack(sel, target, approach);
+        }
+
+        private void OrderAttack(List<Unit> sel, Unit target, bool approach)
+        {
             int inRange = 0;
             foreach (var u in sel)
             {
+                routes.Remove(u);
                 AreaFire.Cancel(u);
                 FocusFire.Orders[u] = target;
                 FocusFire.Nudge(u);
@@ -1038,7 +1044,7 @@ namespace FieldCommand
                 }
                 float reach = FocusFire.MaxRange(u);
                 float standoff = u is Ship ? Plugin.NavalAttackStandoff.Value : Plugin.GroundAttackStandoff.Value;
-                if (reach > 0f) standoff = Mathf.Min(standoff, reach * 0.85f);
+                if (reach > 0f) standoff = reach * 0.8f; // stop at ~80 % of the weapon's reach (artillery stays far back)
                 Vector3 up = u.GlobalPosition().AsVector3();
                 Vector3 tp = t.GlobalPosition().AsVector3();
                 Vector3 dir = tp - up;
@@ -1104,6 +1110,10 @@ namespace FieldCommand
             if (CommandMarkers.ShouldDraw(menuOpen || commandMode || mode != PlaceMode.None))
             {
                 CommandMarkers.Draw(GetCamera(), purchased, factionBought);
+            }
+            if (commandMode && !DynamicMap.mapMaximized && Plugin.EnemyMarkers.Value)
+            {
+                CommandMarkers.DrawEnemies(GetCamera());
             }
 
             try
