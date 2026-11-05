@@ -55,6 +55,17 @@ namespace FieldCommand
             {
                 menuOpen = false;
                 areaTargeting = false;
+                attackPick = false;
+                // leaving command mode forgets the selection (3D and map), so later keys / clicks don't go to it
+                cmdSel.Clear();
+                lastSelection.Clear();
+                try
+                {
+                    SceneSingleton<DynamicMap>.i?.DeselectAllIcons();
+                }
+                catch
+                {
+                }
             }
             else if (mode != PlaceMode.None)
             {

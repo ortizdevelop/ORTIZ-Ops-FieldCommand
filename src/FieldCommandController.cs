@@ -110,6 +110,7 @@ namespace FieldCommand
                     AreaFire.HoldFire.Clear();
                     AreaFire.Missiles.Clear();
                     lastSelection.Clear();
+                    Projectiles.Reset();
                     ResetCommander();
                     catalog = null;
                 }
@@ -1184,6 +1185,19 @@ namespace FieldCommand
             if (commandMode && !DynamicMap.mapMaximized && Plugin.EnemyMarkers.Value)
             {
                 CommandMarkers.DrawEnemies(GetCamera());
+            }
+            if (commandMode && mode == PlaceMode.None && Plugin.ShowProjectiles.Value)
+            {
+                try
+                {
+                    var mineSet = new HashSet<Unit>(purchased);
+                    if (DynamicMap.mapMaximized) Projectiles.DrawMap(mineSet);
+                    else Projectiles.Draw3D(GetCamera(), mineSet);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning("[Projectiles] " + e.Message);
+                }
             }
             if (Plugin.FireModeBadges.Value)
             {
