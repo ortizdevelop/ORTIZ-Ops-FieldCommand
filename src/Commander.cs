@@ -87,6 +87,8 @@ namespace FieldCommand
             pings.Clear();
             boxDragging = false;
             rmbDown = false;
+            targetLists.Clear();
+            ResetGroups();
         }
 
         /// <summary>Units the order keys apply to: the map selection when the map is open, otherwise the command-mode selection.</summary>
@@ -212,7 +214,9 @@ namespace FieldCommand
                 {
                     Unit enemy = null;
                     if (GameApi.TryGetLocal(out _, out var hq0)) enemy = FindTargetScreen(hq0, Input.mousePosition);
-                    if (enemy != null) AttackFromCommand(enemy);
+                    if (enemy != null && Ctrl) QueueTarget(cmdSel.Where(Selectable).ToList(), enemy);
+                    else if (Ctrl) Toast(L.T("Ctrl+RMB: point at an enemy", "Ctrl+ПКМ: наведи на врага"), 2f);
+                    else if (enemy != null) AttackFromCommand(enemy);
                     else if (rmbHasPoint) MoveOrder(rmbWorld, null, shift);
                 }
                 else if (rmbHasPoint && TryFacing(out Vector3 face))
@@ -506,6 +510,19 @@ namespace FieldCommand
                 float h = Mathf.Clamp(6000f / Mathf.Max(dist, 1f), 14f, 46f);
                 Brackets(new Rect(p.x - h, p.y - h, h * 2f, h * 2f), SelColor);
             }
+            // group numbers
+            foreach (var kv in groups)
+            {
+                foreach (var u in kv.Value)
+                {
+                    if (u == null || u.disabled || !ScreenOf(cam, u, out var p)) continue;
+                    float dist = Vector3.Distance(cam.transform.position, u.transform.position);
+                    float h = Mathf.Clamp(6000f / Mathf.Max(dist, 1f), 14f, 46f);
+                    RangeOverlay.Label(new Vector2(p.x - h - 2f, p.y - h - 18f), GroupName(kv.Key), cmdSel.Contains(u) ? SelColor : new Color(1f, 1f, 1f, 0.75f));
+                }
+            }
+            // target list (Ctrl+RMB)
+            if (targetLists.Count > 0) DrawTargetLists3D(cam);
             // order pings
             foreach (var pg in pings)
             {
@@ -562,6 +579,7 @@ namespace FieldCommand
         {
             var map = SceneSingleton<DynamicMap>.i;
             if (map == null) return;
+            if (targetLists.Count > 0) DrawTargetListsOnMap(map);
             foreach (var kv in routes)
             {
                 if (kv.Key == null || !RangeOverlay.ToGui(map, kv.Key.GlobalPosition(), out var prev, out _)) continue;
@@ -589,6 +607,7 @@ namespace FieldCommand
             if (GUILayout.Button(L.T("Stratagems", "Стратегемы"), sec == 2 ? Theme.SegOn : Theme.Seg, GUILayout.Width(130))) OpenSection(2);
             GUILayout.Space(12);
             GUILayout.Label(L.T($"Selected: {cmdSel.Count}", $"Выделено: {cmdSel.Count}") + "   " + GameApi.Money(GameApi.GetFunds()), Theme.RowLabel);
+            DrawGroupChips();
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(L.T("Exit ", "Выход ") + Plugin.MenuKey.Value, GUILayout.Width(110))) SetCommandMode(false);
             GUILayout.EndHorizontal();
@@ -601,7 +620,7 @@ namespace FieldCommand
             get
             {
                 float w = Mathf.Min(Screen.width - 20f, 1180f);
-                return new Rect(Screen.width * 0.5f - w * 0.5f, Screen.height - 92f, w, 82f);
+                return new Rect(Screen.width * 0.5f - w * 0.5f, Screen.height - 104f, w, 94f);
             }
         }
 
@@ -651,8 +670,8 @@ namespace FieldCommand
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.Space(4);
-            GUILayout.Label(L.T("LMB / drag — select · RMB — move (hold and drag — facing) · Shift+RMB — waypoint · Alt — use roads · RMB on an enemy — attack · mouse wheel held — turn the camera · WASD — move the camera",
-                                "ЛКМ / рамка — выделить · ПКМ — двигаться (зажать и потянуть — разворот) · Shift+ПКМ — маршрут · Alt — по дорогам · ПКМ по врагу — атака · зажатое колесо — поворот камеры · WASD — движение камеры"), Theme.Small);
+            GUILayout.Label(L.T("LMB / drag — select · RMB — move (hold and drag — facing) · Shift+RMB — waypoint · Alt — use roads · RMB on an enemy — attack · Ctrl+RMB on enemies — one salvo at each in turn · Ctrl+1…0 — make a group, 1…0 — select (twice — camera to it) · Ctrl+C — buy one more of the selected · mouse wheel held — turn the camera · WASD — move the camera",
+                                "ЛКМ / рамка — выделить · ПКМ — двигаться (зажать и потянуть — разворот) · Shift+ПКМ — маршрут · Alt — по дорогам · ПКМ по врагу — атака · Ctrl+ПКМ по врагам — по залпу по каждому по очереди · Ctrl+1…0 — группа, 1…0 — выделить (дважды — камера к ней) · Ctrl+C — купить ещё такой же · зажатое колесо — поворот камеры · WASD — движение камеры"), Theme.Small);
             GUILayout.EndArea();
         }
 

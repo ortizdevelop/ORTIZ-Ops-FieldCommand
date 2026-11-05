@@ -22,7 +22,7 @@ namespace FieldCommand
     {
         public const string Guid = "ortiz.fieldcommand";
         public const string OldGuid = "com.nikita.fieldcommand";
-        public const string Version = "0.20.0";
+        public const string Version = "0.21.0";
         public const int MaxUnitLimit = 150;
 
         internal static ManualLogSource Log;
@@ -43,6 +43,7 @@ namespace FieldCommand
         internal static ConfigEntry<bool> EnemyMarkers;
         internal static ConfigEntry<bool> DriveOffRoad;
         internal static ConfigEntry<bool> MiddleMouseLook;
+        internal static ConfigEntry<bool> ControlGroups;
         internal static ConfigEntry<KeyCode> AreaFireKey;
         internal static ConfigEntry<bool> SpawnHoldFire;
         internal static ConfigEntry<float> AreaRadius;
@@ -279,6 +280,8 @@ namespace FieldCommand
                 "Show spotted enemies with the game's hostile icons in red while in command mode", "Показывать обнаруженных врагов игровыми значками красного цвета в режиме командира");
             MiddleMouseLook = L.Bind(Config, sBeh, rBeh, "Command mode: turn the camera with the middle mouse button", "Режим командира: поворот камеры средней кнопкой мыши", true,
                 "In command mode the free camera turns while the mouse wheel is held (RMB is used for orders)", "В режиме командира свободная камера поворачивается при зажатом колесике (ПКМ — для приказов)");
+            ControlGroups = L.Bind(Config, sBeh, rBeh, "Command mode: unit groups on 1-0", "Режим командира: группы юнитов на 1-0", true,
+                "Ctrl+1..0 remembers the selection, 1..0 selects it (twice — camera to the group), Ctrl+C — buy one more of the selected type", "Ctrl+1..0 — запомнить выделение, 1..0 — выделить (дважды — камера к группе), Ctrl+C — купить ещё такой же");
             SpawnHoldFire = L.Bind(Config, sBeh, rBeh, "New units: fire only on order", "Новые юниты: огонь только по приказу", false,
                 "Purchased units start in 'fire only on order' mode", "Купленные юниты сразу в режиме «огонь только по приказу»");
             AreaRadius = L.Bind(Config, sBeh, rBeh, "Area fire radius, m", "Радиус огня по площади, м", 150f,

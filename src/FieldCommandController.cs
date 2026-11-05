@@ -179,6 +179,7 @@ namespace FieldCommand
             }
 
             TickCommander();
+            TickCommandHotkeys();
             if (areaTargeting)
             {
                 TickAreaTargeting();
@@ -205,6 +206,7 @@ namespace FieldCommand
             }
 
             TickAttackOrders();
+            TickTargetLists();
             TickFocus();
         }
 
@@ -349,6 +351,12 @@ namespace FieldCommand
                     strike.Point = false;
                     strike.Radius = Mathf.Max(strike.Radius / 1.25f, Stratagems.MinRadius);
                 }
+            }
+            if (Input.GetKeyDown(Plugin.HoldFireKey.Value) && strike == null && selected != null && !selected.Playable && GUIUtility.keyboardControl == 0)
+            {
+                buyForFaction = false;
+                placeHoldFire = !placeHoldFire;
+                Toast(placeHoldFire ? L.T("New unit: fire only on order", "Новый юнит: огонь только по приказу") : L.T("New unit: fire at will", "Новый юнит: свободный огонь"), 2f);
             }
             TickRotation();
             return false;
@@ -754,6 +762,20 @@ namespace FieldCommand
                 Toast(L.T($"Scrapped units: {mineSel.Count}, refund {GameApi.Money(total)}", $"Списано юнитов: {mineSel.Count}, возврат {GameApi.Money(total)}"));
                 return;
             }
+            if (DynamicMap.mapMaximized && Input.GetMouseButtonDown(1) && Ctrl && !IsOverOwnGui(Input.mousePosition))
+            {
+                var qs = OrderSelection();
+                if (qs.Count == 0)
+                {
+                    Toast(L.T("Select your units on the map", "Выдели свои юниты на карте"));
+                    return;
+                }
+                if (!GameApi.TryGetLocal(out _, out var hqQ)) return;
+                var enemyQ = MapTargetUnderCursor(hqQ);
+                if (enemyQ == null) Toast(L.T("Ctrl+RMB: point at an enemy", "Ctrl+ПКМ: наведи на врага"), 2f);
+                else QueueTarget(qs, enemyQ);
+                return;
+            }
             if (!hold && !attack && !defense)
             {
                 // a vanilla right-click move order cancels "approach the target", but not the fire order
@@ -803,18 +825,8 @@ namespace FieldCommand
             Unit target;
             if (DynamicMap.mapMaximized)
             {
-                var map = SceneSingleton<DynamicMap>.i;
-                if (!map.TryGetCursorCoordinates(out var cursor)) return;
-                float radius = 2500f;
-                try
-                {
-                    float metersPerPixel = map.mapDimension / (900f * map.mapImage.transform.lossyScale.x);
-                    if (metersPerPixel > 0f) radius = Mathf.Clamp(45f * metersPerPixel, 150f, 8000f);
-                }
-                catch
-                {
-                }
-                target = FindTargetNear(hq, cursor, radius);
+                if (!SceneSingleton<DynamicMap>.i.TryGetCursorCoordinates(out _)) return;
+                target = MapTargetUnderCursor(hq);
             }
             else
             {
@@ -827,12 +839,29 @@ namespace FieldCommand
                     FocusFire.Clear(u);
                     AreaFire.Cancel(u);
                     attackOrders.Remove(u);
+                    ClearTargetList(u);
                 }
                 Toast(L.T($"Target cleared ({sel.Count}). To pick a target, point at a visible enemy or missile", $"Цель сброшена ({sel.Count}). Чтобы выбрать цель — наведи курсор на видимого врага или ракету"));
                 return;
             }
             bool approach = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             OrderAttack(sel, target, approach);
+        }
+
+        private static Unit MapTargetUnderCursor(FactionHQ hq)
+        {
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null || !map.TryGetCursorCoordinates(out var cursor)) return null;
+            float radius = 2500f;
+            try
+            {
+                float metersPerPixel = map.mapDimension / (900f * map.mapImage.transform.lossyScale.x);
+                if (metersPerPixel > 0f) radius = Mathf.Clamp(45f * metersPerPixel, 150f, 8000f);
+            }
+            catch
+            {
+            }
+            return FindTargetNear(hq, cursor, radius);
         }
 
         private void OrderAttack(List<Unit> sel, Unit target, bool approach)
@@ -842,6 +871,7 @@ namespace FieldCommand
             {
                 routes.Remove(u);
                 AreaFire.Cancel(u);
+                ClearTargetList(u);
                 FocusFire.Orders[u] = target;
                 FocusFire.Nudge(u);
                 if (FocusFire.CanEngageNow(u, target)) inRange++;
@@ -866,6 +896,7 @@ namespace FieldCommand
             {
                 if (u == null || u.disabled) continue;
                 attackOrders.Remove(u);
+                if (targetLists.Remove(u)) FocusFire.Clear(u);
                 if (AreaFire.Give(u, pos, r)) ok++;
             }
             string dur = Plugin.AreaDuration.Value > 0f ? L.T($", {Plugin.AreaDuration.Value:0} s", $", {Plugin.AreaDuration.Value:0} с") : "";
@@ -1216,6 +1247,7 @@ namespace FieldCommand
                 {
                     GUILayout.Space(16);
                     placeHoldFire = Theme.Segmented(placeHoldFire, L.T("Fire at will", "Огонь: свободный"), L.T("Fire on order", "Огонь: по приказу"), 150);
+                    GUILayout.Label($"  [{Plugin.HoldFireKey.Value}]", Theme.Small, GUILayout.Width(40));
                 }
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
