@@ -178,6 +178,7 @@ namespace FieldCommand
                     break;
             }
 
+            CommandModeOn = commandMode && mode == PlaceMode.None;
             TickCommander();
             TickCommandHotkeys();
             if (areaTargeting)
@@ -776,6 +777,22 @@ namespace FieldCommand
                 else QueueTarget(qs, enemyQ);
                 return;
             }
+            // command mode: RMB on an enemy on the map — attack it (the game would just drive there)
+            if (DynamicMap.mapMaximized && commandMode && Input.GetMouseButtonDown(1) && !Ctrl && !IsOverOwnGui(Input.mousePosition)
+                && GameApi.TryGetLocal(out _, out var hqR))
+            {
+                var enemyR = MapTargetUnderCursor(hqR);
+                if (enemyR != null)
+                {
+                    var rs = OrderSelection();
+                    if (rs.Count > 0)
+                    {
+                        foreach (var u in rs) routes.Remove(u);
+                        OrderAttack(rs, enemyR, true);
+                        return;
+                    }
+                }
+            }
             if (!hold && !attack && !defense)
             {
                 // a vanilla right-click move order cancels "approach the target", but not the fire order
@@ -846,6 +863,16 @@ namespace FieldCommand
             }
             bool approach = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             OrderAttack(sel, target, approach);
+        }
+
+        /// <summary>For the map patch: the RMB this frame is our order (Ctrl+RMB list, or RMB on an enemy in command mode).</summary>
+        internal static bool CommandModeOn;
+
+        internal static bool MapRmbIsOurs()
+        {
+            if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) return true;
+            if (!CommandModeOn || !GameApi.TryGetLocal(out _, out var hq)) return false;
+            return MapTargetUnderCursor(hq) != null;
         }
 
         private static Unit MapTargetUnderCursor(FactionHQ hq)

@@ -200,7 +200,7 @@ namespace FieldCommand
         }
     }
 
-    /// <summary>Ctrl+RMB on the map is our target list — keep the game from also sending the selected units there.</summary>
+    /// <summary>Ctrl+RMB on the map (target list) and RMB on an enemy in command mode (attack) are our orders — keep the game from also sending the selected units there.</summary>
     [HarmonyPatch(typeof(DynamicMap), "MapControls")]
     internal static class MapCtrlRmb_Patch
     {
@@ -210,8 +210,8 @@ namespace FieldCommand
             try
             {
                 if (DynamicMap.mapMaximized && Input.GetMouseButtonDown(1)
-                    && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
-                    && __instance.selectedIcons != null && __instance.selectedIcons.Count > 0)
+                    && __instance.selectedIcons != null && __instance.selectedIcons.Count > 0
+                    && FieldCommandController.MapRmbIsOurs())
                 {
                     __state = __instance.selectedIcons;
                     __instance.selectedIcons = new List<MapIcon>();
