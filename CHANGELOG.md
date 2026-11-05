@@ -1,4 +1,15 @@
 # Changelog
+## 0.20.0
+- **Ordered targets are fired at by every weapon that reaches them** — including nuclear, hypersonic, ballistic and other strategic launchers that the AI would not pick by itself. Fire-control batteries (MLRS, missile launchers) plan the salvo right after the order instead of waiting for their own timer.
+- **Fire at area works with all launchers**: projectiles whose seeker can't fly to a point are now steered to the circle by the mod (cruise missiles excepted). Nuclear launchers can shell an area too.
+- **Fire mode at purchase**: *Fire at will / Fire on order* switch in the purchase panel and the placement bar — e.g. buy artillery that won't shoot until you order.
+- **Bottom command bar** in command mode: buttons for every order (Attack, Strike area, **Stop!**, **Cease fire**, fire mode, Hold, ABM, Rearm) with their keys, and the mouse / camera help as text. New keys: **X** — stop, **N** — cease fire (cancels targets and area fire, switches to fire on order).
+- Routes show an **arrow** at the end — which way the unit will face. With a chosen facing, units now come in from behind the point along the arrow, so they stop facing it instead of turning on the spot.
+- (0.19.0) One selection for the 3D view and the map; area-fire guidance fixed for rockets / guided shells / ballistic missiles; your ground units drive straight across fields (Alt — roads).
+## 0.19.0
+- **One selection for the 3D view and the map**: opening the map in command mode selects the same units there, so map orders (RMB move, K target, Z area…) go to them; what you select on the map comes back to the 3D view.
+- **Fire at area with rockets, guided shells and ballistic missiles**: the aim point is now given to the projectile right at launch and kept every frame, ballistic missiles plan their launch angle for the real distance — they no longer turn around mid-air or fly a wrong trajectory.
+- **Off-road driving**: your move orders to your purchased ground units are driven straight across fields instead of detouring along roads. Hold **Alt** while ordering to use the roads. Option *Own units drive straight (off road)* in F1 → *4. Behaviour*.
 ## 0.18.0
 - Command mode: **RMB on an enemy — attack** with the selected units (no map selection needed); units in range fire, the rest advance to ~80 % of their reach (artillery no longer drives up to 1.5 km).
 - Waypoints: **Shift+RMB** (was Ctrl+RMB). **Hold RMB and drag** — the units move there and end up facing the arrow.
