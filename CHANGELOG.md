@@ -1,4 +1,7 @@
 # Changelog
+## 0.15.0
+- **Fire only on order** (**I** on the map, or *Fire: on order* in the *Mine* tab): the unit doesn't shoot at anything by itself — only at the target you give it (**K**), an area (**Z**) or incoming missiles if missile defence (**L**) is on. Option *New units: fire only on order* in F1 → *4. Behaviour*.
+- **Fire at area** (**Z**): select your units on the map, press Z and click on the map — or aim with the free camera and click / press G. Artillery, guns, rocket launchers and ships shell the circle whether there is an enemy there or not: guns are aimed with a ballistic solution at random points of the circle, rockets / guided shells / ballistic missiles fly to them. Radius with **[ ]** (default 150 m), duration 60 s (F1 → *4. Behaviour*). The circle and who can reach it are shown while aiming; active areas are drawn on the map and in 3D. **K** on empty ground — cease fire.
 ## 0.14.2
 - **Weapon range on the map**: select your units on the big map and their firing range is drawn around them — solid ring for ground/sea targets, dashed inner ring for the minimum range (artillery), dashed cyan ring for air targets. Point at an enemy and you see straight away who can hit it: green lines — will fire, red — out of range (with how much is missing). Lines to already ordered targets are shown too. F1 → *0. Interface* → *Weapon range on map*.
 - Unit markers: icons that the game stores on a black square are now drawn transparent.

@@ -42,6 +42,8 @@ Spend your money on **ground units, warships, static air defence and supply depo
 | 🏳️ **Faction-locked** | BDF buys only BDF equipment, PALA only PALA. Ownership is learned from the game's own missions and convoys; manual overrides in config. |
 | 👤 **For yourself or for the faction** | *For me*: units hold position and wait for your orders. *For faction*: the AI decides where they go. Separate limits (60 each by default, up to 150) — set them with sliders right in the purchase menu. |
 | 🎯 **RTS orders on the map** | Move, waypoints, hold, focus fire from current position, advance to firing range, automatic missile defence, paid rearm on the spot, scrap with refund. |
+| 🔇 **Fire only on order** | Units in this mode don't shoot at anything by themselves — only at the target or area you give them. |
+| 💥 **Fire at area** | Artillery, guns, rocket launchers and ships shell a circle you mark on the map or with the camera — whether there is an enemy there or not. |
 | 📡 **Weapon range on the map** | Select your units and their firing range is drawn around them. Point at an enemy — green lines show who will fire, red ones who can't reach (and how much is missing). |
 | 🟧 **Your units stand out** | Units you bought for yourself have their own colour on the map, on the HUD markers and in the Ground Control RTS view; in command mode the game's own unit icon is shown above each of them in the 3D view. |
 | 🚙 **Playable KAR / BOTE units** | Pick modules for every hardpoint, buy and spawn right inside. Get out — the vehicle stays; get back in from the menu. |
@@ -79,6 +81,8 @@ All keys can be rebound in the Configuration Manager (F1).
 | **K** | Fire at the enemy / missile under the cursor **from the current position** (artillery and SAMs engage at max range). On empty ground — clear the target |
 | **Shift+K** | Advance to firing range and attack |
 | **L** | Automatic missile defence — units pick and shoot down enemy missiles themselves (strategic and nuclear first) |
+| **I** | Toggle *fire only on order*: the units don't shoot by themselves, only at the target (K), area (Z) or missiles (L) you give |
+| **Z** | *Fire at area*: then **LMB** on the map (or aim with the free camera and **LMB** / **G**) — shell the circle; **[ ]** — radius, **X** / **RMB** — cancel. **K** on empty ground — cease fire |
 | **Y** | Rearm the selected own units right where they stand, for money |
 | **Delete** | Scrap the selected purchased units (refund 50 % by default) |
 
@@ -100,6 +104,10 @@ With the camera you place with the **mouse**: point and click LMB (or G). When t
 ### Your units on screen
 - Units you bought **for yourself** are painted in their own colour on the map and on the HUD markers (also in the Ground Control RTS view). Default — orange; F1 → *0. Interface* → *My units colour*.
 - In command mode (menu open or placing) the game's own outlined unit icon is drawn above each of your units in the 3D view, tinted in your colour; faction-bought units — in soft green. *Markers above my units*: CommandMode / Always / Off.
+
+### Fire only on order and fire at area
+- **Fire only on order** — **I** on the map or the *Fire: on order / Fire: free* button in the *Mine* tab. Such units ignore enemies until you order: a target (**K**), an area (**Z**) or missile defence (**L**). *New units: fire only on order* in F1 → *4. Behaviour* puts every new purchase in this mode.
+- **Fire at area** — select units, press **Z**: a circle follows the cursor on the map (or the camera's aim point in free camera / with the menu open), lines show which units reach it. **LMB** (or **G** with the camera) — fire. Guns are laid with a ballistic solution onto random points of the circle; rocket launchers raise their launchers and their rockets, guided shells and ballistic missiles fly to the circle by themselves. Units out of range are skipped. Radius **[ ]** (default 150 m), duration 60 s, then they return to normal; **K** on empty ground stops earlier. Active areas are drawn on the map and in the 3D view.
 
 ### Weapon range on the map
 Select your units on the big map:
@@ -152,6 +160,8 @@ Open **F1 → ORTIZ Ops - FieldCommand**. The most useful options:
 | Territory | Min. water depth for ships | 8 m |
 | Behaviour | Spawn in *hold position* | on |
 | Behaviour | Rotation step / rotation speed when held | 45° / 120°/s |
+| Behaviour | New units: fire only on order | off |
+| Behaviour | Area fire radius / duration | 150 m / 60 s |
 | Behaviour | Resupply from nearby ammo sources / resupply radius | on / 150 m |
 | Behaviour | Supply trucks work on their own (ignore hold position) | on |
 | Behaviour | Attack standoff: ground / naval | 1.5 km / 9 km |
@@ -203,6 +213,8 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 - 🏳️ **Только своя фракция** — BDF покупает технику BDF, PALA — PALA. Ручная привязка в настройках.
 - 👤 **Себе или фракции** — «себе»: стоят на месте и ждут приказов; «фракции»: ими управляет ИИ. Отдельные лимиты (по 60, максимум 150) — меняются ползунками прямо в меню покупки.
 - 🎯 **Приказы на карте** — движение, маршрут, держать позицию, огонь с места, выдвижение на дистанцию огня, перехват ракет, платное пополнение на месте, списание с возвратом денег.
+- 🔇 **Огонь только по приказу** — юниты в этом режиме сами ни по кому не стреляют, только по цели или области, которую ты укажешь.
+- 💥 **Огонь по площади** — артиллерия, орудия, РСЗО и корабли обстреливают круг, указанный на карте или камерой, — есть там враг или нет.
 - 📡 **Дальность огня на карте** — выдели свои юниты, и вокруг них видна зона поражения. Наведи на врага: зелёные линии — кто откроет огонь, красные — кто не достаёт (и сколько не хватает).
 - 🟧 **Своя техника заметна** — купленное себе выделяется своим цветом на карте, метках HUD и в Ground Control RTS; в режиме командира над каждым юнитом в 3D — родной значок игры твоего цвета.
 - 🚙 **Играбельная техника KAR / BOTE** — выбор модулей на каждую точку подвеса, сразу садишься внутрь, можно выйти и сесть снова.
@@ -227,12 +239,19 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 | **K** | Огонь по врагу/ракете под курсором с текущей позиции; по пустому месту — сбросить цель |
 | **Shift+K** | Выдвинуться на дистанцию огня и атаковать |
 | **L** | Автоматический перехват ракет (стратегические и ядерные — первыми) |
+| **I** | Огонь только по приказу: сами не стреляют, только по цели (K), области (Z) или ракетам (L) |
+| **Z** | Огонь по площади: дальше **ЛКМ** по карте (или навести свободную камеру и **ЛКМ** / **G**); **[ ]** — радиус, **X** / **ПКМ** — отмена. **K** по пустому месту — прекратить огонь |
 | **Y** | Пополнить боезапас выделенных своих юнитов на месте за деньги |
 | **Delete** | Списать выделенных купленных юнитов с возвратом 50 % |
 
 ### Меню (F6)
 Окно в тёмном «плоском» стиле с боковым меню вкладок; внизу меню — бюджет, фракция и заработок. Акцентный цвет (оранжевый / бирюзовый / лаймовый) — F1 → *0. Interface*. Своя купленная техника выделяется своим цветом на карте и метках (по умолчанию оранжевый, *My units colour*); в режиме командира над ней в 3D рисуется родной значок игры (*Markers above my units*: CommandMode / Always / Off), над купленным для фракции — мягким зелёным. Камерой юниты ставятся **мышкой**: навёл и ЛКМ (или G). Если другой мод (например, Ground Control RTS) меняет цены, техника и флот продаются по исходным ценам игры. Вверху — переключатель «Себе / Фракции» и ползунки **лимита своих юнитов** и **лимита юнитов фракции** (1–150, кнопки −10 / − / + / +10).
 Вкладки: **Наземная**, **Флот**, **Оборона/склады** (морские контейнеры — на воду), **Играбельная** (выбор модулей → покупка → появляешься внутри), **Мои** (список купленного: держать/отпустить, стоп, ПРО, на карте, сесть, **платное пополнение боезапаса** на месте — «Пополнить $X», «Пополнить всех», на карте клавиша **Y**), **Стратегемы**. Окно растягивается за правый нижний угол.
+
+### Огонь по приказу и по площади
+**Огонь только по приказу** — клавиша **I** на карте или кнопка «Огонь: приказ / сам» во вкладке «Мои». Такие юниты не стреляют, пока ты не дашь цель (**K**), область (**Z**) или не включишь перехват ракет (**L**). Настройка *New units: fire only on order* сразу включает режим для всех новых покупок.
+
+**Огонь по площади** — выдели юниты и нажми **Z**: за курсором на карте (или за точкой прицела свободной камеры / при открытом меню) идёт круг, линии показывают, кто до него достаёт. **ЛКМ** (или **G** в камере) — огонь. Орудия наводятся по баллистике в случайные точки круга, РСЗО поднимают пусковые, а их ракеты, управляемые снаряды и баллистические ракеты сами летят в круг. Кто не достаёт — пропускается. Радиус **[ ]** (по умолчанию 150 м), длительность 60 с, потом юниты возвращаются в обычный режим; **K** по пустому месту — прекратить раньше. Активные области видны на карте и в 3D.
 
 ### Дальность огня на карте
 Выдели свои юниты на большой карте: **сплошное кольцо** — дальность по наземным и морским целям, **пунктир внутри** — минимальная дальность (ближе, например, артиллерия не стреляет), **голубой пунктир** — дальность по воздушным целям. При выделении до 4 юнитов дальность подписана над кругом. Наведи на врага: **зелёная** линия — этот юнит может стрелять прямо сейчас, **красная** — не достаёт; подпись: «В ЗОНЕ», «достают 2 из 3» или «ВНЕ ДОСЯГАЕМОСТИ — не хватает 3,4 км». Пунктиром — линии к уже назначенным целям. Учитывается только оружие с боезапасом. Отключить: F1 → *0. Interface* → *Weapon range on map*.
@@ -252,7 +271,7 @@ Game and BepInEx assemblies are referenced from your local installation and are 
 Для артудара, ковровой бомбардировки и ракетного удара выбирается **количество снарядов в залпе** и **число залпов** (1–10, по умолчанию с интервалом 4 с). Цена растёт пропорционально: *цена = базовая × (снарядов ÷ стандартное количество) × залпов*. В таблице — цены за стандартное количество и один залп.
 
 ### Настройки
-**F1 → ORTIZ Ops - FieldCommand**: интерфейс (акцентный цвет, цвет своих юнитов, метки, дальность огня), источник денег, множитель цены, исходные цены, множитель платного пополнения, лимиты юнитов, % возврата и наград, радиусы территории, дистанции атаки, фракции, высоты и скорость снарядов, цены и перезарядки стратегем — см. таблицу [Settings](#settings) выше.
+**F1 → ORTIZ Ops - FieldCommand**: огонь по приказу и по площади (радиус, длительность), интерфейс (акцентный цвет, цвет своих юнитов, метки, дальность огня), источник денег, множитель цены, исходные цены, множитель платного пополнения, лимиты юнитов, % возврата и наград, радиусы территории, дистанции атаки, фракции, высоты и скорость снарядов, цены и перезарядки стратегем — см. таблицу [Settings](#settings) выше.
 
 ### Установка
 Через **NOMM** — найди **ORTIZ Ops - FieldCommand**. Вручную — положи `ORTIZ-Ops-FieldCommand.dll` из [Releases](../../releases) в `BepInEx/plugins/ORTIZ-Ops-FieldCommand/`. Если стояла старая версия *FieldCommand* или *ORTIZ.FieldCommand* — удали её папку, настройки перенесутся сами.
