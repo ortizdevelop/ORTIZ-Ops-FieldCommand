@@ -1,4 +1,9 @@
 # Changelog
+## 0.21.0
+- **Unit groups**: in command mode **Ctrl+1…0** remembers the selected units as a group, **1…0** selects it (**Shift** — add to the selection, press twice — the camera flies to the group). Group numbers are shown over the units and as clickable chips in the top bar. Works on the map too.
+- **Quick buy**: select one of your units and press **Ctrl+C** — placement of one more unit of the same type starts right away (with the camera, or on the map when it is open).
+- **Target list**: **Ctrl+RMB** on several enemies (in 3D or on the map) — the selected units fire **one salvo at each target in turn**. The targets are numbered on screen; dead targets and targets nobody can reach are skipped; when the list ends the units return to their fire mode. RMB / K / cease fire replace the list.
+- **I while placing** switches the new unit's fire mode (free / on order).
 ## 0.20.0
 - **Ordered targets are fired at by every weapon that reaches them** — including nuclear, hypersonic, ballistic and other strategic launchers that the AI would not pick by itself. Fire-control batteries (MLRS, missile launchers) plan the salvo right after the order instead of waiting for their own timer.
 - **Fire at area works with all launchers**: projectiles whose seeker can't fly to a point are now steered to the circle by the mod (cruise missiles excepted). Nuclear launchers can shell an area too.
