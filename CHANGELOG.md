@@ -1,4 +1,6 @@
 # Changelog
+## 0.23.1
+- Projectiles in command mode are now shown with the **game's own icons** instead of custom dots: missiles, rockets and guided shells in flight — yours, allied and tracked enemy ones (red) — in the 3D view. On the big map the game shows them itself. Plain ballistic shells have no icon in the game and are not drawn.
 ## 0.23.0
 - **Shells and missiles in command mode**: projectiles in flight are drawn in 3D and on the map — yours in your colour, allied faint, enemy red; missiles as diamonds with a trail, shells as dots with a short tail (machine-gun fire is left out). Option *Command mode: show shells and missiles* in F1 → *4. Behaviour*.
 - Leaving command mode now **clears the selection** (3D and map), so the last squad no longer stays selected and keys don't go to it. Groups (Ctrl+1…0) are kept.
