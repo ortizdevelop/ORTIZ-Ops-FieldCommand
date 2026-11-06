@@ -110,7 +110,6 @@ namespace FieldCommand
                     AreaFire.HoldFire.Clear();
                     AreaFire.Missiles.Clear();
                     lastSelection.Clear();
-                    Projectiles.Reset();
                     ResetCommander();
                     catalog = null;
                 }
@@ -1190,9 +1189,7 @@ namespace FieldCommand
             {
                 try
                 {
-                    var mineSet = new HashSet<Unit>(purchased);
-                    if (DynamicMap.mapMaximized) Projectiles.DrawMap(mineSet);
-                    else Projectiles.Draw3D(GetCamera(), mineSet);
+                    if (!DynamicMap.mapMaximized) Projectiles.Draw3D(GetCamera(), new HashSet<Unit>(purchased));
                 }
                 catch (Exception e)
                 {

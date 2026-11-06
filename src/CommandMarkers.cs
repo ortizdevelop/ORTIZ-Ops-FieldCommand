@@ -246,6 +246,33 @@ namespace FieldCommand
             }
         }
 
+        /// <summary>Missiles in flight with the game's own friendly / hostile icons: yours in your colour, allied in the faction colour, enemy (tracked) in red.</summary>
+        public static void DrawMissiles(Camera cam, HashSet<Unit> mine)
+        {
+            if (cam == null || Event.current.type != EventType.Repaint || !GameApi.TryGetLocal(out _, out var hq) || hq == null) return;
+            foreach (var u in UnitRegistry.allUnits)
+            {
+                try
+                {
+                    if (!(u is Missile m) || m.disabled || m.definition == null || m.NetworkHQ == null) continue;
+                    if (m.NetworkHQ == hq)
+                    {
+                        Unit owner = null;
+                        try { owner = m.owner; } catch { }
+                        DrawOne(cam, m, owner != null && mine.Contains(owner) ? OwnedMarks.Normal : FactionColor, 1f, m.transform.position, false);
+                    }
+                    else
+                    {
+                        if (!hq.IsTargetBeingTracked(m) || !hq.TryGetKnownPosition(m, out var known)) continue;
+                        DrawOne(cam, m, EnemyColor, 1f, known.ToLocalPosition(), true);
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+
         private static void DrawOne(Camera cam, Unit u, Color color, float sizeMul)
         {
             if (u == null) return;
